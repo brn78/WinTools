@@ -18,6 +18,9 @@ Non richiede installazione né dipendenze: **`WinTools.exe` è un unico file da 
 * **Spillo**: blocca la barra sempre visibile. **Ingranaggio**: impostazioni.
 * **Area di notifica**: clic sinistro mostra la barra, clic destro apre il menu (blocca, impostazioni, aggiorna l'indice, avvio con Windows, aggiornamenti, esci).
 
+## 🆕 Versione 1.0.1
+* **Correzione**: con la barra comparsa dal bordo non si riusciva a scrivere nella ricerca (la finestra non prendeva il fuoco e i tasti finivano nell'app di prima). Ora il primo clic sulla barra la attiva e porta il cursore nella casella.
+
 ## 🆕 Versione 1.0
 
 * **Barra a comparsa** dal bordo superiore o inferiore, su qualunque schermo (quello con il mouse o il principale), con animazione, angoli arrotondati e ombra. Si ritira da sola o resta bloccata.

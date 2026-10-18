@@ -124,6 +124,9 @@ namespace WinTools.UI
                 Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() => { if (!IsActive && !_dialogOpen && !S.Pinned && IsBarVisible) HideBar(); }));
             };
             DpiChanged += (s, e) => Reposition();
+            // Comparsa dal bordo senza rubare il fuoco: al primo clic sulla barra la finestra si attiva davvero,
+            // altrimenti si potrebbe scrivere nella casella ma i tasti finirebbero nell'app di prima
+            PreviewMouseDown += (s, e) => EnsureActive(e.OriginalSource as DependencyObject);
             SizeChanged += (s, e) => { if (S.Edge == "bottom") Reposition(); };
             App.Current.Index.StatusChanged += () => Dispatcher.BeginInvoke(new Action(UpdateStatus));
         }
@@ -174,7 +177,8 @@ namespace WinTools.UI
             Slide.BeginAnimation(TranslateTransform.YProperty, null);
             if (!wasVisible)
             {
-                Native.SetNoActivate(_hwnd, !activate);
+                _noActivate = !activate;
+                Native.SetNoActivate(_hwnd, _noActivate);
                 Reposition();
                 Show();
                 Reposition();
@@ -193,6 +197,7 @@ namespace WinTools.UI
             if (activate)
             {
                 KeepOpen = true;
+                _noActivate = false;
                 Native.SetNoActivate(_hwnd, false);
                 Activate();
                 Native.ForceForeground(_hwnd);
@@ -202,6 +207,24 @@ namespace WinTools.UI
             }
             else KeepOpen = Notice.Visibility == Visibility.Visible;
             UpdateStatus();
+        }
+
+        bool _noActivate;
+
+        /// <summary>Toglie il «non attivabile» e porta la finestra in primo piano; con un clic nella ricerca, fuoco alla casella.</summary>
+        void EnsureActive(DependencyObject source)
+        {
+            bool inSearch = false;
+            for (var d = source; d != null; d = VisualTreeHelper.GetParent(d)) { if (d == SearchHost) { inSearch = true; break; } }
+            if (_noActivate || !IsActive)
+            {
+                _noActivate = false;
+                Native.SetNoActivate(_hwnd, false);
+                Activate();
+                Native.ForceForeground(_hwnd);
+                KeepOpen = true;
+            }
+            if (inSearch) Dispatcher.BeginInvoke(DispatcherPriority.Input, new Action(() => { SearchBox.Focus(); Keyboard.Focus(SearchBox); }));
         }
 
         public void HideBar()
