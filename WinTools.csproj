@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    WinTools: barra multifunzione a comparsa per Windows 10 e 11.
+    Un unico exe portatile su .NET Framework 4.8 (già incluso in Windows): nessuna dipendenza da installare.
+    La versione qui sotto è l'unica fonte: Build.ps1 e Publish.ps1 la leggono, l'app la mostra e la confronta
+    con le release su GitHub per l'aggiornamento automatico.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <RootNamespace>WinTools</RootNamespace>
+    <AssemblyName>WinTools</AssemblyName>
+    <Version>1.0.0</Version>
+    <Product>WinTools</Product>
+    <Company>brn78</Company>
+    <Authors>brn78</Authors>
+    <Copyright>© 2026 brn78 · github.com/brn78</Copyright>
+    <Description>Barra multifunzione a comparsa con tasti personalizzabili e ricerca istantanea di file e app</Description>
+    <ApplicationIcon>WinTools.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <StartupObject>WinTools.Program</StartupObject>
+    <GenerateSupportedRuntime>false</GenerateSupportedRuntime>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <DebugType>none</DebugType>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
+    <Deterministic>true</Deterministic>
+    <NoWarn>$(NoWarn);CS1591;WFAC010</NoWarn>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath>bin\$(Configuration)\</OutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.IO.Compression" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- L'icona serve anche a runtime (area di notifica, finestre): incorporata come risorsa -->
+    <EmbeddedResource Include="WinTools.ico" LogicalName="WinTools.ico" />
+  </ItemGroup>
+
+</Project>
