@@ -1,0 +1,309 @@
+<Window x:Class="WinTools.UI.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="WinTools - Impostazioni" Width="980" Height="700" MinWidth="820" MinHeight="560" WindowStartupLocation="CenterScreen">
+  <Window.Resources>
+    <Style x:Key="RowLabel" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+      <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+    <Style x:Key="RowDesc" TargetType="TextBlock" BasedOn="{StaticResource TxtCaption}">
+      <Setter Property="TextWrapping" Value="Wrap"/>
+      <Setter Property="Margin" Value="0,2,0,0"/>
+    </Style>
+    <Style x:Key="SettingCard" TargetType="Border" BasedOn="{StaticResource Card}">
+      <Setter Property="Padding" Value="16,12"/>
+      <Setter Property="Margin" Value="0,0,0,6"/>
+    </Style>
+    <Style x:Key="Section" TargetType="TextBlock" BasedOn="{StaticResource TxtBodyStrong}">
+      <Setter Property="Margin" Value="0,18,0,8"/>
+    </Style>
+  </Window.Resources>
+
+  <Grid>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="248"/>
+      <ColumnDefinition Width="*"/>
+    </Grid.ColumnDefinitions>
+
+    <!-- ============================ NAVIGAZIONE ============================ -->
+    <Grid>
+      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+      <StackPanel Orientation="Horizontal" Margin="20,12,16,18">
+        <Image x:Name="NavLogo" Width="30" Height="30" RenderOptions.BitmapScalingMode="HighQuality"/>
+        <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+          <TextBlock Text="WinTools" FontSize="16" FontWeight="SemiBold"/>
+          <TextBlock x:Name="NavVersion" Text="v1.0" Style="{StaticResource TxtCaption}"/>
+        </StackPanel>
+      </StackPanel>
+      <StackPanel Grid.Row="1" x:Name="Nav">
+        <RadioButton Style="{StaticResource NavItem}" Tag="general" IsChecked="True" Checked="Nav_Checked">
+          <StackPanel Orientation="Horizontal"><TextBlock Style="{StaticResource Glyph}" Text="&#xE713;" Margin="0,0,12,0"/><TextBlock Text="Generale"/></StackPanel>
+        </RadioButton>
+        <RadioButton Style="{StaticResource NavItem}" Tag="buttons" Checked="Nav_Checked">
+          <StackPanel Orientation="Horizontal"><TextBlock Style="{StaticResource Glyph}" Text="&#xE71D;" Margin="0,0,12,0"/><TextBlock Text="Tasti della barra"/></StackPanel>
+        </RadioButton>
+        <RadioButton Style="{StaticResource NavItem}" Tag="search" Checked="Nav_Checked">
+          <StackPanel Orientation="Horizontal"><TextBlock Style="{StaticResource Glyph}" Text="&#xE721;" Margin="0,0,12,0"/><TextBlock Text="Ricerca e indice"/></StackPanel>
+        </RadioButton>
+        <RadioButton Style="{StaticResource NavItem}" Tag="about" Checked="Nav_Checked">
+          <StackPanel Orientation="Horizontal"><TextBlock Style="{StaticResource Glyph}" Text="&#xE946;" Margin="0,0,12,0"/><TextBlock Text="Informazioni e aggiornamenti"/></StackPanel>
+        </RadioButton>
+      </StackPanel>
+      <Button Grid.Row="2" Style="{StaticResource SubtleButton}" HorizontalContentAlignment="Left" Margin="12,0,12,14" Click="GitHub_Click" ToolTip="github.com/brn78">
+        <StackPanel Orientation="Horizontal">
+          <Path Width="18" Height="18" Stretch="Uniform" Fill="{DynamicResource TextSecondary}" Data="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+          <TextBlock Text="brn78 su GitHub" Margin="10,0,0,0" Foreground="{DynamicResource TextSecondary}"/>
+        </StackPanel>
+      </Button>
+    </Grid>
+
+    <!-- ============================ CONTENUTO ============================ -->
+    <Border Grid.Column="1" Background="{DynamicResource LayerFill}" BorderBrush="{DynamicResource CardStroke}" BorderThickness="1,1,0,0" CornerRadius="8,0,0,0">
+      <Grid>
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <StackPanel Margin="32,22,32,4">
+          <TextBlock x:Name="PageTitle" Style="{StaticResource TxtTitle}" Text="Generale"/>
+          <TextBlock x:Name="PageSubtitle" Style="{StaticResource TxtSecondary}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="32,8,32,8">
+          <Grid>
+            <!-- ==== GENERALE ==== -->
+            <StackPanel x:Name="PageGeneral">
+              <TextBlock Text="Aspetto" Style="{StaticResource Section}" Margin="0,6,0,8"/>
+              <Border Style="{StaticResource SettingCard}">
+                <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <StackPanel><TextBlock Text="Tema" Style="{StaticResource RowLabel}"/><TextBlock Text="Segue Windows, oppure chiaro o scuro. Il colore di accento è quello del sistema." Style="{StaticResource RowDesc}"/></StackPanel>
+                  <ComboBox Grid.Column="1" x:Name="ThemeBox" Width="180" VerticalAlignment="Center">
+                    <ComboBoxItem Content="Come Windows" Tag="system"/><ComboBoxItem Content="Chiaro" Tag="light"/><ComboBoxItem Content="Scuro" Tag="dark"/>
+                  </ComboBox>
+                </Grid>
+              </Border>
+              <Border Style="{StaticResource SettingCard}">
+                <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <StackPanel><TextBlock Text="Lato dello schermo" Style="{StaticResource RowLabel}"/><TextBlock Text="Da dove compare la barra." Style="{StaticResource RowDesc}"/></StackPanel>
+                  <ComboBox Grid.Column="1" x:Name="EdgeBox" Width="180" VerticalAlignment="Center">
+                    <ComboBoxItem Content="In alto" Tag="top"/><ComboBoxItem Content="In basso" Tag="bottom"/>
+                  </ComboBox>
+                </Grid>
+              </Border>
+              <Border Style="{StaticResource SettingCard}">
+                <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <StackPanel><TextBlock Text="Schermo" Style="{StaticResource RowLabel}"/><TextBlock Text="Con più schermi: dove compare la barra." Style="{StaticResource RowDesc}"/></StackPanel>
+                  <ComboBox Grid.Column="1" x:Name="MonitorBox" Width="180" VerticalAlignment="Center">
+                    <ComboBoxItem Content="Dove c'è il mouse" Tag="cursor"/><ComboBoxItem Content="Schermo principale" Tag="primary"/>
+                  </ComboBox>
+                </Grid>
+              </Border>
+              <Border Style="{StaticResource SettingCard}">
+                <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <StackPanel><TextBlock Text="Barra larga quanto lo schermo" Style="{StaticResource RowLabel}"/><TextBlock Text="Altrimenti è centrata e larga quanto serve ai tasti." Style="{StaticResource RowDesc}"/></StackPanel>
+                  <ToggleButton Grid.Column="1" x:Name="FullWidthBox" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"/>
+                </Grid>
+              </Border>
+              <Border Style="{StaticResource SettingCard}">
+                <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <StackPanel><TextBlock Text="Etichette sotto i tasti" Style="{StaticResource RowLabel}"/><TextBlock Text="Senza etichette la barra è più bassa; il nome resta nel suggerimento al passaggio del mouse." Style="{StaticResource RowDesc}"/></StackPanel>
+                  <ToggleButton Grid.Column="1" x:Name="LabelsBox" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"/>
+                </Grid>
+              </Border>
+
+              <TextBlock Text="Quando compare" Style="{StaticResource Section}"/>
+              <Border Style="{StaticResource SettingCard}">
+                <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <StackPanel><TextBlock Text="Quando il mouse tocca il bordo dello schermo" Style="{StaticResource RowLabel}"/><TextBlock Text="La barra scende (o sale) da sola e si ritira quando il mouse se ne va." Style="{StaticResource RowDesc}"/></StackPanel>
+                  <ToggleButton Grid.Column="1" x:Name="EdgeTriggerBox" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"/>
+                </Grid>
+              </Border>
+              <Border Style="{StaticResource SettingCard}">
+                <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <StackPanel><TextBlock Text="Tempi" Style="{StaticResource RowLabel}"/><TextBlock Text="Millisecondi sul bordo prima che compaia · millisecondi lontano dalla barra prima che si ritiri." Style="{StaticResource RowDesc}"/></StackPanel>
+                  <TextBox Grid.Column="1" x:Name="EdgeDelayBox" Width="80" VerticalAlignment="Center" TextAlignment="Right"/>
+                  <TextBox Grid.Column="2" x:Name="HideDelayBox" Width="80" VerticalAlignment="Center" TextAlignment="Right" Margin="8,0,0,0"/>
+                </Grid>
+              </Border>
+              <Border Style="{StaticResource SettingCard}">
+                <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <StackPanel><TextBlock Text="Tasto rapido" Style="{StaticResource RowLabel}"/><TextBlock Text="Fai clic nella casella e premi la combinazione (es. Ctrl+Alt+W). Mostra la barra e porta il cursore nella ricerca." Style="{StaticResource RowDesc}"/></StackPanel>
+                  <TextBox Grid.Column="1" x:Name="HotkeyBox" Width="200" VerticalAlignment="Center" IsReadOnly="True" PreviewKeyDown="HotkeyBox_PreviewKeyDown" ToolTip="Premi la combinazione di tasti"/>
+                  <Button Grid.Column="2" Content="Nessuno" Margin="8,0,0,0" Padding="12,5" Click="HotkeyClear_Click" VerticalAlignment="Center"/>
+                </Grid>
+              </Border>
+              <Border Style="{StaticResource SettingCard}">
+                <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <StackPanel><TextBlock Text="Barra bloccata (sempre visibile)" Style="{StaticResource RowLabel}"/><TextBlock Text="Non si ritira da sola. Si attiva anche con lo spillo sulla barra." Style="{StaticResource RowDesc}"/></StackPanel>
+                  <ToggleButton Grid.Column="1" x:Name="PinnedBox" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"/>
+                </Grid>
+              </Border>
+
+              <TextBlock Text="Avvio" Style="{StaticResource Section}"/>
+              <Border Style="{StaticResource SettingCard}">
+                <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <StackPanel><TextBlock Text="Avvia WinTools con Windows" Style="{StaticResource RowLabel}"/><TextBlock x:Name="AutoStartDesc" Text="Una voce nell'avvio dell'utente corrente (Gestione attività → App di avvio). Se sposti l'exe, la voce si aggiorna al prossimo avvio." Style="{StaticResource RowDesc}"/></StackPanel>
+                  <ToggleButton Grid.Column="1" x:Name="AutoStartBox" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"/>
+                </Grid>
+              </Border>
+            </StackPanel>
+
+            <!-- ==== TASTI ==== -->
+            <Grid x:Name="PageButtons" Visibility="Collapsed">
+              <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+              <WrapPanel Margin="0,6,0,10">
+                <Button Content="Aggiungi…" Style="{StaticResource AccentButton}" Click="AddButton_Click" Margin="0,0,8,6"/>
+                <Button Content="Modifica…" Click="EditButton_Click" Margin="0,0,8,6"/>
+                <Button Content="Rimuovi" Click="RemoveButton_Click" Margin="0,0,8,6"/>
+                <Button Content="Su" Click="UpButton_Click" Margin="0,0,8,6" MinWidth="48"/>
+                <Button Content="Giù" Click="DownButton_Click" Margin="0,0,8,6" MinWidth="48"/>
+                <Button Content="Ripristina i tasti predefiniti" Style="{StaticResource SubtleButton}" Click="ResetButtons_Click" Margin="8,0,0,6"/>
+              </WrapPanel>
+              <Border Grid.Row="1" Style="{StaticResource Card}" MinHeight="300">
+                <ListBox x:Name="ButtonsBox" MouseDoubleClick="EditButton_Click">
+                  <ListBox.ItemTemplate>
+                    <DataTemplate>
+                      <Grid Height="44">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="44"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                        <Grid Width="28" Height="28" VerticalAlignment="Center">
+                          <Image Source="{Binding Icon}" Width="24" Height="24" Visibility="{Binding ImageVisibility}" RenderOptions.BitmapScalingMode="HighQuality"/>
+                          <TextBlock Style="{StaticResource Glyph}" Text="{Binding Glyph}" FontSize="20" Visibility="{Binding GlyphVisibility}" Foreground="{DynamicResource Accent}"/>
+                        </Grid>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="6,0,12,0">
+                          <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis"/>
+                          <TextBlock Text="{Binding Button.Target}" Style="{StaticResource TxtCaption}" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                        <TextBlock Grid.Column="2" Text="{Binding Flags}" Style="{StaticResource TxtCaption}" VerticalAlignment="Center"/>
+                      </Grid>
+                    </DataTemplate>
+                  </ListBox.ItemTemplate>
+                </ListBox>
+              </Border>
+            </Grid>
+
+            <!-- ==== RICERCA ==== -->
+            <StackPanel x:Name="PageSearch" Visibility="Collapsed">
+              <Border Style="{StaticResource SettingCard}" Margin="0,6,0,6">
+                <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <StackPanel><TextBlock Text="Indice dei file e delle cartelle" Style="{StaticResource RowLabel}"/><TextBlock Text="Nomi di file e cartelle delle unità locali, letti in sottofondo e tenuti aggiornati. Solo i nomi: il contenuto dei file non si legge mai." Style="{StaticResource RowDesc}"/></StackPanel>
+                  <ToggleButton Grid.Column="1" x:Name="IndexEnabledBox" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"/>
+                </Grid>
+              </Border>
+              <Border Style="{StaticResource SettingCard}">
+                <StackPanel>
+                  <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center">
+                      <TextBlock x:Name="IndexStatusText" Text="…" Style="{StaticResource RowLabel}"/>
+                      <TextBlock x:Name="IndexDetailText" Style="{StaticResource RowDesc}"/>
+                    </StackPanel>
+                    <Button Grid.Column="1" x:Name="RescanButton" Content="Aggiorna ora" Click="Rescan_Click" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                    <Button Grid.Column="2" x:Name="StopScanButton" Content="Ferma" Click="StopScan_Click" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                  </Grid>
+                  <ProgressBar x:Name="IndexProgress" IsIndeterminate="True" Visibility="Collapsed" Margin="0,10,0,0"/>
+                </StackPanel>
+              </Border>
+              <Border Style="{StaticResource SettingCard}">
+                <StackPanel>
+                  <TextBlock Text="Cartelle da indicizzare" Style="{StaticResource RowLabel}"/>
+                  <TextBlock Text="Una per riga. Vuoto = tutte le unità fisse (C:\, D:\…). Si possono usare le variabili, es. %USERPROFILE%." Style="{StaticResource RowDesc}"/>
+                  <TextBox x:Name="RootsBox" AcceptsReturn="True" MinHeight="64" MaxHeight="140" VerticalScrollBarVisibility="Auto" Margin="0,8,0,0" FontFamily="Cascadia Mono, Consolas" FontSize="12.5"/>
+                </StackPanel>
+              </Border>
+              <Border Style="{StaticResource SettingCard}">
+                <StackPanel>
+                  <TextBlock Text="Cartelle da saltare" Style="{StaticResource RowLabel}"/>
+                  <TextBlock Text="Una per riga. Un nome (node_modules) salta tutte le cartelle con quel nome; un percorso (%SystemRoot%, D:\Backup) salta solo quello." Style="{StaticResource RowDesc}"/>
+                  <TextBox x:Name="ExcludeBox" AcceptsReturn="True" MinHeight="90" MaxHeight="200" VerticalScrollBarVisibility="Auto" Margin="0,8,0,0" FontFamily="Cascadia Mono, Consolas" FontSize="12.5"/>
+                  <Button Content="Ripristina l'elenco predefinito" Style="{StaticResource SubtleButton}" HorizontalAlignment="Left" Margin="0,6,0,0" Click="ResetExcludes_Click"/>
+                </StackPanel>
+              </Border>
+              <Border Style="{StaticResource SettingCard}">
+                <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <StackPanel><TextBlock Text="Anche file e cartelle nascosti" Style="{StaticResource RowLabel}"/><TextBlock Text="Compresa AppData. L'indice diventa molto più grande." Style="{StaticResource RowDesc}"/></StackPanel>
+                  <ToggleButton Grid.Column="1" x:Name="HiddenBox" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"/>
+                </Grid>
+              </Border>
+              <Border Style="{StaticResource SettingCard}">
+                <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <StackPanel><TextBlock Text="App del menu Start tra i risultati" Style="{StaticResource RowLabel}"/><TextBlock Text="Programmi installati e app dello Store, come li vede il menu Start." Style="{StaticResource RowDesc}"/></StackPanel>
+                  <ToggleButton Grid.Column="1" x:Name="AppsBox" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"/>
+                </Grid>
+              </Border>
+              <Border Style="{StaticResource SettingCard}">
+                <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <StackPanel><TextBlock Text="Rilettura completa ogni (ore)" Style="{StaticResource RowLabel}"/><TextBlock Text="Le modifiche si seguono di continuo; ogni tanto si rilegge tutto per sicurezza. 0 = solo all'avvio senza indice e a mano." Style="{StaticResource RowDesc}"/></StackPanel>
+                  <TextBox Grid.Column="1" x:Name="RescanHoursBox" Width="80" VerticalAlignment="Center" TextAlignment="Right"/>
+                </Grid>
+              </Border>
+            </StackPanel>
+
+            <!-- ==== INFORMAZIONI ==== -->
+            <StackPanel x:Name="PageAbout" Visibility="Collapsed">
+              <Border Style="{StaticResource SettingCard}" Margin="0,6,0,6">
+                <StackPanel Orientation="Horizontal">
+                  <Image x:Name="AboutLogo" Width="64" Height="64" RenderOptions.BitmapScalingMode="HighQuality" VerticalAlignment="Top"/>
+                  <StackPanel Margin="18,0,0,0">
+                    <TextBlock Style="{StaticResource TxtSubtitle}"><Run Text="WinTools"/> <Run x:Name="AboutVersion" Foreground="{DynamicResource TextSecondary}" FontWeight="Normal"/></TextBlock>
+                    <TextBlock Text="Barra multifunzione a comparsa per Windows 10 e 11: tasti personalizzabili e ricerca istantanea di file, cartelle e app. Un solo exe, nessuna installazione." Style="{StaticResource TxtSecondary}" TextWrapping="Wrap" MaxWidth="560" Margin="0,4,0,8"/>
+                    <WrapPanel>
+                      <Button Content="Pagina del progetto" Click="Repo_Click" Margin="0,0,8,6"/>
+                      <Button Content="Tutte le versioni" Click="Releases_Click" Margin="0,0,8,6"/>
+                      <Button Content="Cartella dei dati" Click="DataFolder_Click" Margin="0,0,8,6"/>
+                      <Button Content="Log degli errori" Click="Log_Click" Margin="0,0,8,6"/>
+                    </WrapPanel>
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+              <Border Style="{StaticResource SettingCard}">
+                <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <StackPanel><TextBlock Text="Aggiornamenti automatici" Style="{StaticResource RowLabel}"/><TextBlock x:Name="UpdateDesc" Text="All'avvio e ogni 6 ore controlla le release su GitHub (contatta solo api.github.com), scarica e verifica la nuova versione e la installa alla chiusura, eliminando quella precedente." Style="{StaticResource RowDesc}"/></StackPanel>
+                  <ToggleButton Grid.Column="1" x:Name="AutoUpdateBox" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"/>
+                </Grid>
+              </Border>
+              <Border Style="{StaticResource SettingCard}">
+                <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <StackPanel><TextBlock x:Name="UpdateStateText" Text="Controlla adesso se c'è una versione più recente." Style="{StaticResource RowLabel}"/><TextBlock x:Name="UpdateStateDesc" Style="{StaticResource RowDesc}"/></StackPanel>
+                  <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button x:Name="CheckUpdateButton" Content="Controlla aggiornamenti" Click="CheckUpdate_Click"/>
+                    <Button x:Name="InstallUpdateButton" Content="Riavvia e aggiorna" Style="{StaticResource AccentButton}" Click="InstallUpdate_Click" Visibility="Collapsed" Margin="8,0,0,0"/>
+                  </StackPanel>
+                </Grid>
+              </Border>
+              <Border Style="{StaticResource SettingCard}">
+                <StackPanel>
+                  <TextBlock Text="Come funziona" Style="{StaticResource RowLabel}"/>
+                  <TextBlock Style="{StaticResource RowDesc}" Text="La barra compare quando il mouse tocca il bordo dello schermo o con il tasto rapido. I tasti si trascinano per riordinarli; un file trascinato sulla barra diventa un tasto. La ricerca legge l'indice in memoria: parole in qualunque ordine, senza accenti né maiuscole; Invio apre, Ctrl+Invio apre la cartella, Shift+Invio avvia come amministratore. Preferenze e indice stanno in %LOCALAPPDATA%\WinTools: per rimuovere tutto basta cancellare l'exe e quella cartella."/>
+                </StackPanel>
+              </Border>
+              <TextBlock Style="{StaticResource TxtCaption}" Margin="4,8,0,0" Text="© 2026 brn78 · github.com/brn78 · Fatto con C#, WPF e un po' di pignoleria."/>
+            </StackPanel>
+          </Grid>
+        </ScrollViewer>
+
+        <Border Grid.Row="2" BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0" Padding="32,14">
+          <Grid>
+            <TextBlock x:Name="FooterNote" Style="{StaticResource TxtCaption}" VerticalAlignment="Center" Text="Le modifiche si applicano con Salva."/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+              <Button Content="Salva" Style="{StaticResource AccentButton}" MinWidth="120" Click="Save_Click"/>
+              <Button Content="Chiudi" MinWidth="120" Margin="8,0,0,0" Click="Close_Click"/>
+            </StackPanel>
+          </Grid>
+        </Border>
+      </Grid>
+    </Border>
+  </Grid>
+</Window>

@@ -1,0 +1,9 @@
+# Sorgenti sempre UTF-8 con CRLF (Windows PowerShell 5.1 e Visual Studio): nessuna conversione
+*.ps1 -text
+*.cs  -text
+*.xaml -text
+*.csproj -text
+*.manifest -text
+*.exe binary
+*.ico binary
+*.png binary
