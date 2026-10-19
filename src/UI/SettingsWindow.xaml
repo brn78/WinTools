@@ -194,7 +194,8 @@
                         <Grid.ColumnDefinitions><ColumnDefinition Width="44"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                         <Grid Width="28" Height="28" VerticalAlignment="Center">
                           <Image Source="{Binding Icon}" Width="24" Height="24" Visibility="{Binding ImageVisibility}" RenderOptions.BitmapScalingMode="HighQuality"/>
-                          <TextBlock Style="{StaticResource Glyph}" Text="{Binding Glyph}" FontSize="20" Visibility="{Binding GlyphVisibility}" Foreground="{DynamicResource Accent}"/>
+                          <Path Data="{Binding Mdi}" Fill="{Binding IconBrush}" Stretch="Uniform" Width="22" Height="22" Visibility="{Binding MdiVisibility}"/>
+                          <TextBlock Style="{StaticResource Glyph}" Text="{Binding Glyph}" FontSize="20" Visibility="{Binding GlyphVisibility}" Foreground="{Binding IconBrush}"/>
                         </Grid>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="6,0,12,0">
                           <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis"/>

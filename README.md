@@ -23,6 +23,11 @@ In entrambi i casi l'aggiornamento automatico sostituisce l'exe sul posto.
 * **Spillo**: blocca la barra sempre visibile. **Ingranaggio**: impostazioni.
 * **Area di notifica**: clic sinistro mostra la barra, clic destro apre il menu (blocca, impostazioni, aggiorna l'indice, avvio con Windows, aggiornamenti, esci).
 
+## 🆕 Versione 1.4.0
+* **Catalogo di 7.000 icone Material Design** nell'editor dei tasti (lo stesso di BlackHole Workspaces, incluso nell'exe, niente internet): scrivi in italiano o in inglese («interruttore», «switch», «telecamera», «rete») e le icone si filtrano mentre digiti; le prime proposte sono quelle più utili per una barra di avvio.
+* **Colore dell'icona**: la palette di 18 colori di BlackHole oppure un colore qualsiasi; vale per le icone del catalogo e per i simboli. Tasti, menu dei contenitori, elenco delle impostazioni e fantasma del trascinamento la disegnano a colori.
+* **Editor dei tasti ridimensionabile** (si estende in altezza, con la lista delle icone che scorre).
+
 ## 🆕 Versione 1.3.4
 * **Trascinamento anche nell'elenco dei tasti delle impostazioni**: riordina, trascina dentro un contenitore (cornice sulla sua riga) o fuori, con fantasma e linea di inserimento come sulla barra.
 
@@ -127,3 +132,4 @@ powershell -ExecutionPolicy Bypass -File .\Build.ps1
 * La barra è una finestra WPF senza bordo, sempre in primo piano, che non compare in Alt+Tab; la parte trasparente lascia passare i clic.
 * L'indice usa `FindFirstFileEx` con recupero a blocchi grandi su più thread in modalità «in sottofondo» (`THREAD_MODE_BACKGROUND_BEGIN`): la lettura di 600.000 voci richiede una ventina di secondi su SSD senza rallentare il resto.
 * Le icone di file, cartelle e app arrivano da `IShellItemImageFactory` su un thread dedicato e vengono messe in cache.
+* Le icone del catalogo sono le **Material Design Icons 7.4.47** di Pictogrammers (licenza Apache 2.0, `Assets\LICENSE-mdi.txt`), incorporate come `Assets\mdi.mui.gz` (865 KB) con le traduzioni italiane in `Assets\mdi-it.txt`; si disegnano come tracciati WPF, quindi nitide a ogni DPI.

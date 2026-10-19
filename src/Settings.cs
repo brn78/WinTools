@@ -16,8 +16,10 @@ namespace WinTools
         public string Target { get; set; } = "";
         public string Arguments { get; set; } = "";
         public string WorkingDir { get; set; } = "";
-        /// <summary>Vuoto = icona del file; «E8B7» = glifo Segoe Fluent Icons; altrimenti il percorso di un .ico/.png/.exe.</summary>
+        /// <summary>Vuoto = icona del file; «E8B7» = glifo Segoe Fluent Icons; «mdi:folder» = icona Material Design; altrimenti il percorso di un .ico/.png/.exe.</summary>
         public string Icon { get; set; } = "";
+        /// <summary>Colore dell'icona (simbolo o MDI) come «#RRGGBB»; vuoto = colore di accento.</summary>
+        public string IconColor { get; set; } = "";
         /// <summary>Avvia come amministratore (chiede l'elevazione UAC).</summary>
         public bool Admin { get; set; }
         /// <summary>Mostra solo l'icona, senza etichetta.</summary>
@@ -32,7 +34,7 @@ namespace WinTools
         {
             return new BarButton
             {
-                Id = Id, Label = Label, Target = Target, Arguments = Arguments, WorkingDir = WorkingDir, Icon = Icon, Admin = Admin, IconOnly = IconOnly, Group = Group, Separator = Separator,
+                Id = Id, Label = Label, Target = Target, Arguments = Arguments, WorkingDir = WorkingDir, Icon = Icon, IconColor = IconColor, Admin = Admin, IconOnly = IconOnly, Group = Group, Separator = Separator,
                 Children = (Children ?? new List<BarButton>()).Select(c => c.Clone()).ToList()
             };
         }
@@ -178,7 +180,7 @@ namespace WinTools
             foreach (var b in list)
             {
                 if (string.IsNullOrEmpty(b.Id)) b.Id = Guid.NewGuid().ToString("N");
-                b.Label = b.Label ?? ""; b.Target = b.Target ?? ""; b.Arguments = b.Arguments ?? ""; b.WorkingDir = b.WorkingDir ?? ""; b.Icon = b.Icon ?? "";
+                b.Label = b.Label ?? ""; b.Target = b.Target ?? ""; b.Arguments = b.Arguments ?? ""; b.WorkingDir = b.WorkingDir ?? ""; b.Icon = b.Icon ?? ""; b.IconColor = b.IconColor ?? "";
                 if (b.Children == null) b.Children = new List<BarButton>();
                 // Un contenitore dentro un contenitore no: i suoi tasti salgono di un livello
                 foreach (var c in b.Children.Where(c => c.Group).ToList()) { b.Children.Remove(c); b.Children.AddRange(c.Children ?? new List<BarButton>()); }

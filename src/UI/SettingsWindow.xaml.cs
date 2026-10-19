@@ -36,25 +36,21 @@ namespace WinTools.UI
         public ButtonVmBase(BarButton b)
         {
             Button = b;
-            if (b.Separator) Glyph = "";
-            else if (ButtonVm.IsGlyph(b.Icon)) Glyph = ((char)Convert.ToInt32(b.Icon, 16)).ToString();
-            else if (b.Group && string.IsNullOrEmpty(b.Icon)) Glyph = "";
-            else
-            {
-                string key = string.IsNullOrEmpty(b.Icon) ? Tools.ResolveShortcut(Environment.ExpandEnvironmentVariables(b.Target)) : b.Icon;
-                if (key.StartsWith("shell:", StringComparison.OrdinalIgnoreCase) && !key.StartsWith("shell:AppsFolder", StringComparison.OrdinalIgnoreCase)) Glyph = "";
-                else
-                {
-                    _icon = IconCache.Get(key, 24, img => { if (img != null) { _icon = img; Raise("Icon"); Raise("ImageVisibility"); Raise("GlyphVisibility"); } });
-                    if (_icon == null) Glyph = "";
-                }
-            }
+            var look = IconLook.For(b);
+            Glyph = b.Separator ? "" : look.Glyph;
+            Mdi = look.Mdi;
+            IconBrush = look.Brush;
+            if (!string.IsNullOrEmpty(look.ImageKey))
+                _icon = IconCache.Get(look.ImageKey, 24, img => { if (img != null) { _icon = img; Raise("Icon"); Raise("ImageVisibility"); Raise("GlyphVisibility"); Raise("MdiVisibility"); } });
         }
         public string Label => string.IsNullOrEmpty(Button.Label) ? Button.Target : Button.Label;
         public string Glyph { get; }
+        public Geometry Mdi { get; }
+        public Brush IconBrush { get; }
         public System.Windows.Media.ImageSource Icon => _icon;
         public Visibility ImageVisibility => _icon != null ? Visibility.Visible : Visibility.Collapsed;
-        public Visibility GlyphVisibility => _icon == null ? Visibility.Visible : Visibility.Collapsed;
+        public Visibility MdiVisibility => Mdi != null && _icon == null ? Visibility.Visible : Visibility.Collapsed;
+        public Visibility GlyphVisibility => _icon == null && Mdi == null ? Visibility.Visible : Visibility.Collapsed;
         public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
         protected void Raise(string n) => PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(n));
     }

@@ -21,7 +21,8 @@
             <StackPanel Orientation="Vertical" MinWidth="40" Visibility="{Binding ContentVisibility}">
               <Grid Width="26" Height="26" HorizontalAlignment="Center">
                 <Image Source="{Binding Icon}" Width="24" Height="24" Visibility="{Binding ImageVisibility}" RenderOptions.BitmapScalingMode="HighQuality"/>
-                <TextBlock Style="{StaticResource Glyph}" Text="{Binding Glyph}" FontSize="20" Visibility="{Binding GlyphVisibility}" Foreground="{DynamicResource Accent}"/>
+                <Path Data="{Binding Mdi}" Fill="{Binding IconBrush}" Stretch="Uniform" Width="23" Height="23" Visibility="{Binding MdiVisibility}"/>
+                <TextBlock Style="{StaticResource Glyph}" Text="{Binding Glyph}" FontSize="20" Visibility="{Binding GlyphVisibility}" Foreground="{Binding IconBrush}"/>
                 <Border Visibility="{Binding GroupBadgeVisibility}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-5,-4"
                         Background="{DynamicResource BarFill}" CornerRadius="6" Padding="2,0">
                   <TextBlock Style="{StaticResource Glyph}" Text="&#xE70D;" FontSize="8" Foreground="{DynamicResource TextSecondary}"/>
@@ -46,7 +47,8 @@
           <StackPanel Orientation="Horizontal" Visibility="{Binding ContentVisibility}">
             <Grid Width="22" Height="22" Margin="0,0,12,0">
               <Image Source="{Binding Icon}" Width="20" Height="20" Visibility="{Binding ImageVisibility}" RenderOptions.BitmapScalingMode="HighQuality"/>
-              <TextBlock Style="{StaticResource Glyph}" Text="{Binding Glyph}" FontSize="17" Visibility="{Binding GlyphVisibility}" Foreground="{DynamicResource Accent}"/>
+              <Path Data="{Binding Mdi}" Fill="{Binding IconBrush}" Stretch="Uniform" Width="19" Height="19" Visibility="{Binding MdiVisibility}"/>
+              <TextBlock Style="{StaticResource Glyph}" Text="{Binding Glyph}" FontSize="17" Visibility="{Binding GlyphVisibility}" Foreground="{Binding IconBrush}"/>
             </Grid>
             <TextBlock Text="{Binding Label}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="260"/>
           </StackPanel>
@@ -208,6 +210,7 @@
         <StackPanel Orientation="Horizontal">
           <Grid Width="24" Height="24" Margin="0,0,8,0">
             <Image x:Name="GhostImage" Width="22" Height="22" RenderOptions.BitmapScalingMode="HighQuality"/>
+            <Path x:Name="GhostPath" Stretch="Uniform" Width="21" Height="21" Visibility="Collapsed"/>
             <TextBlock x:Name="GhostGlyph" Style="{StaticResource Glyph}" FontSize="18" Foreground="{DynamicResource Accent}"/>
           </Grid>
           <TextBlock x:Name="GhostLabel" VerticalAlignment="Center" MaxWidth="200" TextTrimming="CharacterEllipsis"/>
