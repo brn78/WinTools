@@ -82,6 +82,15 @@
               </Border>
               <Border Style="{StaticResource SettingCard}">
                 <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <StackPanel><TextBlock Text="Animazione della barra" Style="{StaticResource RowLabel}"/><TextBlock Text="Come compare e si ritira: scorrendo dal bordo, sfumando, entrambe le cose o di colpo." Style="{StaticResource RowDesc}"/></StackPanel>
+                  <ComboBox Grid.Column="1" x:Name="AnimationBox" Width="220" VerticalAlignment="Center">
+                    <ComboBoxItem Content="Scorrimento e dissolvenza" Tag="both"/><ComboBoxItem Content="Solo dissolvenza" Tag="fade"/><ComboBoxItem Content="Solo scorrimento" Tag="slide"/><ComboBoxItem Content="Nessuna" Tag="none"/>
+                  </ComboBox>
+                </Grid>
+              </Border>
+              <Border Style="{StaticResource SettingCard}">
+                <Grid>
                   <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                   <StackPanel><TextBlock Text="Colore di accento" Style="{StaticResource RowLabel}"/><TextBlock x:Name="AccentDesc" Text="Quello di Windows, oppure uno a tua scelta: icone dei tasti, interruttori, bordo della ricerca, linea di inserimento." Style="{StaticResource RowDesc}"/></StackPanel>
                   <Border Grid.Column="1" x:Name="AccentSwatch" Width="28" Height="28" CornerRadius="6" BorderBrush="{DynamicResource ControlStroke}" BorderThickness="1" VerticalAlignment="Center" Margin="12,0,10,0"/>
@@ -126,6 +135,20 @@
                   <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                   <StackPanel><TextBlock Text="Riga informazioni sotto i tasti" Style="{StaticResource RowLabel}"/><TextBlock Text="Processore, memoria, traffico di rete e connessione, indirizzi IPv4 (DHCP o statici) e porte COM, aggiornati ogni secondo mentre la barra è visibile. Un clic apre lo strumento relativo (gli indirizzi si copiano)." Style="{StaticResource RowDesc}"/></StackPanel>
                   <ToggleButton Grid.Column="1" x:Name="InfoStripBox" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"/>
+                </Grid>
+              </Border>
+
+              <TextBlock Text="File trascinati sulla barra" Style="{StaticResource Section}"/>
+              <Border Style="{StaticResource SettingCard}">
+                <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <StackPanel><TextBlock Text="Conserva una copia dei file piccoli nell'archivio di WinTools" Style="{StaticResource RowLabel}"/><TextBlock Text="Un tasto creato da un file apre il file dov'è: se lo sposti o lo elimini smette di funzionare. Con questa opzione i file fino alla dimensione indicata vengono copiati in %LOCALAPPDATA%\WinTools\Archivio e il tasto apre la copia; togliendo il tasto la copia va nel Cestino. Cartelle e file più grandi restano collegamenti (l'avviso dopo il rilascio offre «Conserva copie»)." Style="{StaticResource RowDesc}"/></StackPanel>
+                  <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,16,0">
+                    <TextBlock Text="fino a" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <TextBox x:Name="AutoArchiveMbBox" Width="64" VerticalAlignment="Center" TextAlignment="Right"/>
+                    <TextBlock Text="MB" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                  </StackPanel>
+                  <ToggleButton Grid.Column="2" x:Name="AutoArchiveBox" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"/>
                 </Grid>
               </Border>
 

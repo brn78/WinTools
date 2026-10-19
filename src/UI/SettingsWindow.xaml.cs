@@ -91,6 +91,7 @@ namespace WinTools.UI
             var js = new JavaScriptSerializer();
             _work = js.Deserialize<AppSettings>(js.Serialize(App.Current.Settings));
             Select(ThemeBox, _work.Theme);
+            Select(AnimationBox, _work.Animation);
             _accent = _work.AccentColor ?? "";
             UpdateAccentSwatch();
             Select(EdgeBox, _work.Edge);
@@ -98,6 +99,8 @@ namespace WinTools.UI
             FullWidthBox.IsChecked = _work.FullWidth;
             LabelsBox.IsChecked = _work.ShowLabels;
             InfoStripBox.IsChecked = _work.ShowInfoStrip;
+            AutoArchiveBox.IsChecked = _work.AutoArchive;
+            AutoArchiveMbBox.Text = _work.AutoArchiveMaxMb.ToString();
             EdgeTriggerBox.IsChecked = _work.EdgeTrigger;
             FocusEdgeBox.IsChecked = _work.FocusOnEdge;
             EdgeDelayBox.Text = _work.EdgeDelayMs.ToString();
@@ -292,6 +295,8 @@ namespace WinTools.UI
             }
         }
 
+        readonly List<BarButton> _removed = new List<BarButton>();
+
         void RemoveButton_Click(object sender, RoutedEventArgs e)
         {
             var row = ButtonsBox.SelectedItem as ButtonRow;
@@ -299,6 +304,8 @@ namespace WinTools.UI
             int sel = ButtonsBox.SelectedIndex;
             int i = row.Owner.IndexOf(row.Button);
             row.Owner.Remove(row.Button);
+            // La copia nell'archivio si elimina solo al salvataggio (con Annulla il tasto resta)
+            if (!row.Button.Group) _removed.Add(row.Button);
             // Via un contenitore: i suoi tasti tornano sulla barra al suo posto
             if (row.Button.Group && row.Button.Children.Count > 0) _work.Buttons.InsertRange(Math.Min(_work.Buttons.Count, Math.Max(0, i)), row.Button.Children);
             RefreshRows();
@@ -599,12 +606,16 @@ namespace WinTools.UI
             bool oldApps = s.Index.Apps;
 
             s.Theme = Selected(ThemeBox) ?? "system";
+            s.Animation = Selected(AnimationBox) ?? "both";
             s.AccentColor = _accent ?? "";
             s.Edge = Selected(EdgeBox) ?? "top";
             s.Monitor = Selected(MonitorBox) ?? "cursor";
             s.FullWidth = FullWidthBox.IsChecked == true;
             s.ShowLabels = LabelsBox.IsChecked == true;
             s.ShowInfoStrip = InfoStripBox.IsChecked == true;
+            s.AutoArchive = AutoArchiveBox.IsChecked == true;
+            int mb;
+            if (int.TryParse(AutoArchiveMbBox.Text.Trim(), out mb)) s.AutoArchiveMaxMb = Math.Max(1, Math.Min(4000, mb));
             s.EdgeTrigger = EdgeTriggerBox.IsChecked == true;
             s.FocusOnEdge = FocusEdgeBox.IsChecked == true;
             int n;
@@ -615,6 +626,8 @@ namespace WinTools.UI
             s.AutoStart = AutoStartBox.IsChecked == true;
             s.AutoUpdate = AutoUpdateBox.IsChecked == true;
             s.Buttons = _work.Buttons;
+            foreach (var removed in _removed) if (s.FindButton(removed.Id, out _) == null) ArchiveStore.DeleteFor(removed);
+            _removed.Clear();
 
             s.Index.Enabled = IndexEnabledBox.IsChecked == true;
             s.Index.Roots = Lines(RootsBox.Text);
