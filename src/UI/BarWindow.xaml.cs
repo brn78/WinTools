@@ -1055,24 +1055,13 @@ namespace WinTools.UI
         /// </summary>
         void AfterDrop(string title, List<BarButton> buttons, Action rename)
         {
+            // I tasti aprono i file dove stanno: niente copie (su alcuni PC Esplora file non apre le cartelle nuove sotto AppData)
             var files = buttons.Where(ArchiveStore.IsFileTarget).ToList();
-            int auto = 0;
-            if (S.AutoArchive && files.Count > 0)
-            {
-                var small = files.Where(b => ArchiveStore.SizeOk(b.Target, S.AutoArchiveMaxMb)).ToList();
-                auto = ArchiveButtons(small);
-            }
-            var rest = files.Where(b => !ArchiveStore.IsArchived(b.Target)).ToList();
-            string copies = auto == 1 ? "Copia conservata nell'archivio di WinTools" : $"{auto} copie conservate nell'archivio di WinTools";
-            if (rest.Count > 0)
-            {
-                string why = S.AutoArchive ? $" (oltre {S.AutoArchiveMaxMb} MB)" : "";
-                string msg = (auto > 0 ? copies + ". " : "") + (rest.Count == 1
-                    ? $"Il tasto «{rest[0].Label}»{why} apre il file originale: se lo sposti o lo elimini smette di funzionare."
-                    : $"{rest.Count} tasti{why} aprono i file originali: se li sposti o li elimini smettono di funzionare.");
-                ShowNotice("info", title, msg, "Conserva copie", () => { int n = ArchiveButtons(rest); ShowNotice("success", n == 1 ? "Copia conservata." : $"{n} copie conservate.", "I tasti ora aprono le copie in " + ArchiveDir + "."); }, sticky: true);
-            }
-            else if (auto > 0) ShowNotice("success", title, copies + (auto == 1 ? ": l'originale può essere spostato o eliminato." : ": gli originali possono essere spostati o eliminati."), rename != null ? "Rinomina…" : null, rename);
+            if (files.Count > 0)
+                ShowNotice("info", title, files.Count == 1
+                    ? "Il tasto è un collegamento: apre il file dov'è adesso. Se lo sposti o lo elimini, il tasto lo segnala e smette di funzionare."
+                    : "I tasti sono collegamenti: aprono i file dove stanno adesso. Se li sposti o li elimini, i tasti lo segnalano e smettono di funzionare.",
+                    rename != null ? "Rinomina…" : null, rename);
             else if (rename != null) ShowNotice("success", title, "Clic destro sul tasto per modificarlo.", "Rinomina…", rename);
             else ShowNotice("success", title, "Clic destro sul tasto per modificarlo.");
         }
@@ -1211,8 +1200,6 @@ namespace WinTools.UI
                     }));
                 return;
             }
-            if (ArchiveStore.IsFileTarget(b))
-                items.Add(Menu("Conserva una copia nell'archivio di WinTools", "", () => { int n = ArchiveButtons(new[] { b }); if (n > 0) ShowNotice("success", "Copia conservata.", "Il tasto ora apre la copia in " + ArchiveDir + ": l'originale può essere spostato o eliminato."); }));
         }
 
         /// <summary>Copia i file dei tasti indicati nell'archivio e punta i tasti alle copie. Restituisce quanti ne ha copiati.</summary>

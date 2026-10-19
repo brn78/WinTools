@@ -99,8 +99,6 @@ namespace WinTools.UI
             FullWidthBox.IsChecked = _work.FullWidth;
             LabelsBox.IsChecked = _work.ShowLabels;
             InfoStripBox.IsChecked = _work.ShowInfoStrip;
-            AutoArchiveBox.IsChecked = _work.AutoArchive;
-            AutoArchiveMbBox.Text = _work.AutoArchiveMaxMb.ToString();
             EdgeTriggerBox.IsChecked = _work.EdgeTrigger;
             FocusEdgeBox.IsChecked = _work.FocusOnEdge;
             EdgeDelayBox.Text = _work.EdgeDelayMs.ToString();
@@ -613,9 +611,6 @@ namespace WinTools.UI
             s.FullWidth = FullWidthBox.IsChecked == true;
             s.ShowLabels = LabelsBox.IsChecked == true;
             s.ShowInfoStrip = InfoStripBox.IsChecked == true;
-            s.AutoArchive = AutoArchiveBox.IsChecked == true;
-            int mb;
-            if (int.TryParse(AutoArchiveMbBox.Text.Trim(), out mb)) s.AutoArchiveMaxMb = Math.Max(1, Math.Min(4000, mb));
             s.EdgeTrigger = EdgeTriggerBox.IsChecked == true;
             s.FocusOnEdge = FocusEdgeBox.IsChecked == true;
             int n;

@@ -139,9 +139,8 @@ namespace WinTools
         public SearchFilter Filter { get; set; } = new SearchFilter();
         /// <summary>Animazione di comparsa e ritiro: both (scorrimento e dissolvenza), fade, slide, none.</summary>
         public string Animation { get; set; } = "both";
-        /// <summary>File trascinati sulla barra: se piccoli, se ne conserva una copia nell'archivio e il tasto apre quella.</summary>
-        public bool AutoArchive { get; set; } = true;
-        /// <summary>Dimensione massima (MB) dei file copiati in automatico.</summary>
+        /// <summary>Copia automatica dei file trascinati nell'archivio: tolta nella 1.9.1 (resta il campo per le impostazioni vecchie), spenta.</summary>
+        public bool AutoArchive { get; set; } = false;
         public int AutoArchiveMaxMb { get; set; } = 20;
         /// <summary>Ultime ricerche aperte (percorsi), per i suggerimenti con la casella vuota.</summary>
         public List<string> Recent { get; set; } = new List<string>();
