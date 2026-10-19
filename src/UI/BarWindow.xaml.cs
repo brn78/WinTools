@@ -1166,7 +1166,7 @@ namespace WinTools.UI
 
         // ------------------------------------------------------------------ file mancanti e archivio
         /// <summary>Cartella in cui WinTools conserva le copie dei file: così un tasto continua a funzionare anche se l'originale sparisce.</summary>
-        public static string ArchiveDir => Path.Combine(AppSettings.AppDir, "Archivio");
+        public static string ArchiveDir => AppSettings.ArchiveDir;
 
         static bool IsArchived(string path) => path.StartsWith(ArchiveDir + "\\", StringComparison.OrdinalIgnoreCase);
 

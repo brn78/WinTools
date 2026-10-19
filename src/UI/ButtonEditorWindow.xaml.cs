@@ -63,11 +63,74 @@ namespace WinTools.UI
             else if (!string.IsNullOrEmpty(button.Icon)) { IconFile.IsChecked = true; ImageBox.Text = button.Icon; }
             else IconAuto.IsChecked = true;
             GroupBox.IsChecked = button.Group;
+            LoadRdp(button);
             _loading = false;
             GroupBox_Changed(null, null);
             IconMode_Changed(null, null);
+            UpdateRdpCard();
             MarkColorSwatch();
             LabelBox.Focus();
+        }
+
+        // ------------------------------------------------------------------ Desktop remoto
+        /// <summary>Se il tasto è già un .rdp (o mstsc.exe con /v:…), i campi si riempiono da lì.</summary>
+        void LoadRdp(BarButton button)
+        {
+            RdpFile.Settings s = null;
+            string t = Environment.ExpandEnvironmentVariables((button.Target ?? "").Trim().Trim('"'));
+            if (t.EndsWith(".rdp", StringComparison.OrdinalIgnoreCase) && System.IO.File.Exists(t)) s = RdpFile.ReadSettings(t);
+            else if (RdpFile.IsRdpTarget(t)) s = RdpFile.FromArguments(button.Arguments);
+            if (s == null) return;
+            RdpHostBox.Text = s.Host;
+            RdpUserBox.Text = s.User;
+            RdpFullBox.IsChecked = s.FullScreen;
+            RdpMultiBox.IsChecked = s.MultiMon;
+            RdpAdminBox.IsChecked = s.Admin;
+        }
+
+        void UpdateRdpCard()
+        {
+            bool rdp = GroupBox.IsChecked != true && RdpFile.IsRdpTarget(TargetBox.Text);
+            RdpCard.Visibility = rdp ? Visibility.Visible : Visibility.Collapsed;
+            // Con il file .rdp generato gli argomenti non servono: il computer si scrive nel riquadro
+            ArgsLabel.Text = rdp ? "Argomenti (facoltativi; con un computer indicato sotto non servono)" : "Argomenti (facoltativi)";
+        }
+
+        void Rdp_Changed(object sender, TextChangedEventArgs e)
+        {
+            if (_loading) return;
+            if (LabelBox.Text.Trim() == "" || LabelBox.Text.Trim().Equals("Connessione Desktop remoto", StringComparison.OrdinalIgnoreCase)) LabelBox.Text = RdpHostBox.Text.Trim();
+        }
+
+        /// <summary>
+        /// Con un computer nel riquadro Desktop remoto: scrive (o riscrive) il file .rdp nell'archivio di WinTools e vi
+        /// punta il tasto. Restituisce false se qualcosa non va (già segnalato).
+        /// </summary>
+        bool ApplyRdp()
+        {
+            if (RdpCard.Visibility != Visibility.Visible) return true;
+            string host = RdpHostBox.Text.Trim();
+            if (host == "") return true;   // mstsc.exe «nudo» o un .rdp esistente: si lascia com'è
+            try
+            {
+                var s = new RdpFile.Settings { Host = host, User = RdpUserBox.Text.Trim(), FullScreen = RdpFullBox.IsChecked == true, MultiMon = RdpMultiBox.IsChecked == true, Admin = RdpAdminBox.IsChecked == true };
+                string dir = System.IO.Path.Combine(AppSettings.ArchiveDir, _button.Id);
+                string path = System.IO.Path.Combine(dir, RdpFile.FileNameFor(LabelBox.Text.Trim(), host));
+                string old = Environment.ExpandEnvironmentVariables((_button.Target ?? "").Trim().Trim('"'));
+                // Un .rdp fuori dall'archivio (per esempio sul desktop) non si tocca: si crea la copia nell'archivio
+                RdpFile.Write(path, s);
+                if (old.StartsWith(dir + "\\", StringComparison.OrdinalIgnoreCase) && !old.Equals(path, StringComparison.OrdinalIgnoreCase)) { try { System.IO.File.Delete(old); } catch { } }
+                TargetBox.Text = path;
+                ArgsBox.Text = "";
+                AdminBox.IsChecked = false;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Program.LogError("File .rdp", ex);
+                MessageBox.Show(this, "Non riesco a creare il file .rdp nell'archivio di WinTools:\n" + ex.Message, Program.Title, MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
         }
 
         // ------------------------------------------------------------------ contenitore
@@ -89,6 +152,7 @@ namespace WinTools.UI
             }
             Heading.Text = group ? (string.IsNullOrEmpty(_button.Label) ? "Nuovo contenitore" : "Modifica contenitore") : string.IsNullOrEmpty(_button.Target) ? "Nuovo tasto" : "Modifica tasto";
             UpdatePreview();
+            UpdateRdpCard();
         }
 
         void PresetBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -119,7 +183,7 @@ namespace WinTools.UI
             UpdatePreview();
         }
 
-        void Any_Changed(object sender, TextChangedEventArgs e) { if (!_loading) UpdatePreview(); }
+        void Any_Changed(object sender, TextChangedEventArgs e) { if (!_loading) { UpdatePreview(); UpdateRdpCard(); } }
 
         void IconSearch_TextChanged(object sender, TextChangedEventArgs e)
         {
@@ -305,13 +369,14 @@ namespace WinTools.UI
                 return;
             }
             _button.Group = false;
-            string target = TargetBox.Text.Trim();
-            if (target == "")
+            if (TargetBox.Text.Trim() == "")
             {
                 MessageBox.Show(this, "Scrivi che cosa deve aprire il tasto.", Program.Title, MessageBoxButton.OK, MessageBoxImage.Information);
                 TargetBox.Focus();
                 return;
             }
+            if (!ApplyRdp()) return;
+            string target = TargetBox.Text.Trim();
             _button.Label = LabelBox.Text.Trim();
             if (_button.Label == "") _button.Label = target.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? target : System.IO.Path.GetFileNameWithoutExtension(target.TrimEnd('\\'));
             _button.Target = target;

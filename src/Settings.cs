@@ -152,6 +152,8 @@ namespace WinTools
         }
         public static string SettingsPath => Path.Combine(AppDir, "WinTools.settings.json");
         public static string IndexPath => Path.Combine(AppDir, "index.bin");
+        /// <summary>Copie dei file conservate da WinTools (e file .rdp generati): un tasto che punta qui non dipende dall'originale.</summary>
+        public static string ArchiveDir => Path.Combine(AppDir, "Archivio");
         public static string ErrorLog => Path.Combine(AppDir, "WinTools-error.log");
 
         // ---------------------------------------------------------------- lettura e scrittura
