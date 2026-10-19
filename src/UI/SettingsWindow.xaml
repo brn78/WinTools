@@ -124,7 +124,7 @@
               <Border Style="{StaticResource SettingCard}">
                 <Grid>
                   <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                  <StackPanel><TextBlock Text="Riga informazioni sotto i tasti" Style="{StaticResource RowLabel}"/><TextBlock Text="Processore, memoria, traffico di rete e connessione, indirizzi IPv4 e porte COM, aggiornati ogni secondo mentre la barra è visibile. Un clic apre lo strumento relativo (gli indirizzi si copiano)." Style="{StaticResource RowDesc}"/></StackPanel>
+                  <StackPanel><TextBlock Text="Riga informazioni sotto i tasti" Style="{StaticResource RowLabel}"/><TextBlock Text="Processore, memoria, traffico di rete e connessione, indirizzi IPv4 (DHCP o statici) e porte COM, aggiornati ogni secondo mentre la barra è visibile. Un clic apre lo strumento relativo (gli indirizzi si copiano)." Style="{StaticResource RowDesc}"/></StackPanel>
                   <ToggleButton Grid.Column="1" x:Name="InfoStripBox" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"/>
                 </Grid>
               </Border>

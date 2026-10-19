@@ -190,7 +190,10 @@
               <Setter Property="VerticalAlignment" Value="Center"/>
             </Style>
           </Border.Resources>
-          <StackPanel Orientation="Horizontal">
+          <DockPanel>
+            <!-- firma a destra -->
+            <TextBlock DockPanel.Dock="Right" Style="{StaticResource InfoText}" Text="2026 © Leonardi Bruno" Margin="12,0,6,0" Opacity="0.8"/>
+            <StackPanel Orientation="Horizontal">
             <Button Style="{StaticResource InfoItem}" Click="InfoCpu_Click" ToolTip="Processore · clic: Gestione attività">
               <StackPanel Orientation="Horizontal"><Path x:Name="CpuIcon" Style="{StaticResource InfoIcon}"/><TextBlock x:Name="CpuText" Style="{StaticResource InfoText}" Text="CPU —" MinWidth="62"/></StackPanel>
             </Button>
@@ -201,12 +204,13 @@
               <StackPanel Orientation="Horizontal"><Path x:Name="NetIcon" Style="{StaticResource InfoIcon}"/><TextBlock x:Name="NetText" Style="{StaticResource InfoText}" Text="—" MinWidth="158"/></StackPanel>
             </Button>
             <Button x:Name="IpButton" Style="{StaticResource InfoItem}" Click="InfoIp_Click" ToolTip="Indirizzi IPv4 · clic: copia">
-              <StackPanel Orientation="Horizontal"><Path x:Name="IpIcon" Style="{StaticResource InfoIcon}"/><TextBlock x:Name="IpText" Style="{StaticResource InfoText}" Text="—" MinWidth="110"/></StackPanel>
+              <StackPanel Orientation="Horizontal"><Path x:Name="IpIcon" Style="{StaticResource InfoIcon}"/><TextBlock x:Name="IpText" Style="{StaticResource InfoText}" Text="—" MinWidth="160"/></StackPanel>
             </Button>
             <Button x:Name="ComButton" Style="{StaticResource InfoItem}" Click="InfoCom_Click" ToolTip="Porte seriali · clic: Gestione dispositivi">
               <StackPanel Orientation="Horizontal"><Path x:Name="ComIcon" Style="{StaticResource InfoIcon}"/><TextBlock x:Name="ComText" Style="{StaticResource InfoText}" Text="—" MinWidth="90"/></StackPanel>
             </Button>
-          </StackPanel>
+            </StackPanel>
+          </DockPanel>
         </Border>
 
         <!-- ============================ AVVISO ============================ -->
@@ -251,9 +255,9 @@
     </Border>
 
     <!-- ============================ FILTRI DELLA RICERCA ============================ -->
-    <Popup x:Name="FilterPopup" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade" Placement="Bottom" VerticalOffset="6"
+    <Popup x:Name="FilterPopup" StaysOpen="True" AllowsTransparency="True" PopupAnimation="Fade" Placement="Bottom" VerticalOffset="6"
            Opened="FilterPopup_Opened" Closed="FilterPopup_Closed">
-      <Border Background="{DynamicResource DialogFill}" BorderBrush="{DynamicResource CardStroke}" BorderThickness="1" CornerRadius="8" Padding="16,12" Margin="8" Width="340">
+      <Border Background="{DynamicResource DialogFill}" BorderBrush="{DynamicResource CardStroke}" BorderThickness="1" CornerRadius="8" Padding="16,12" Margin="8" Width="340" KeyDown="FilterPanel_KeyDown">
         <Border.Effect><DropShadowEffect BlurRadius="14" ShadowDepth="3" Direction="270" Opacity="0.35" Color="#000000"/></Border.Effect>
         <StackPanel>
           <TextBlock Text="Filtri della ricerca" Style="{StaticResource TxtBodyStrong}"/>

@@ -114,12 +114,17 @@ namespace WinTools
             foreach (var ni in NetworkInterface.GetAllNetworkInterfaces())
             {
                 if (ni.OperationalStatus != OperationalStatus.Up || ni.NetworkInterfaceType == NetworkInterfaceType.Loopback) continue;
-                foreach (var a in ni.GetIPProperties().UnicastAddresses)
+                var props = ni.GetIPProperties();
+                bool dhcpEnabled = false;
+                try { dhcpEnabled = props.GetIPv4Properties()?.IsDhcpEnabled ?? false; } catch { }
+                foreach (var a in props.UnicastAddresses)
                 {
                     if (a.Address.AddressFamily != AddressFamily.InterNetwork) continue;
                     string ip = a.Address.ToString();
                     if (ip.StartsWith("169.254.")) continue;   // indirizzo automatico senza DHCP: non serve a nessuno
-                    list.Add(Tuple.Create(ip, ni.Name));
+                    // Origine dell'indirizzo: assegnato dal DHCP oppure impostato a mano (statico)
+                    string origin = a.PrefixOrigin == PrefixOrigin.Dhcp ? "DHCP" : a.PrefixOrigin == PrefixOrigin.Manual ? "statico" : dhcpEnabled ? "DHCP" : "statico";
+                    list.Add(Tuple.Create(ip, ni.Name + "  ·  " + origin));
                 }
             }
             // Prima le schede fisiche (Ethernet, Wi-Fi), poi le virtuali
