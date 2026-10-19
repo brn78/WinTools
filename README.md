@@ -23,6 +23,13 @@ In entrambi i casi l'aggiornamento automatico sostituisce l'exe sul posto.
 * **Spillo**: blocca la barra sempre visibile. **Ingranaggio**: impostazioni.
 * **Area di notifica**: clic sinistro mostra la barra, clic destro apre il menu (blocca, impostazioni, aggiorna l'indice, avvio con Windows, aggiornamenti, esci).
 
+## 🆕 Versione 1.3.0
+* **Risultati come in Esplora file**: dal tasto destro **Copia**, **Taglia**, **Incolla** (nella cartella trovata o in quella del file; con le finestre di avanzamento e di conflitto di Windows) e **Proprietà**.
+* **Dimensione anche per le cartelle** nei risultati, calcolata in sottofondo mentre l'elenco è visibile («almeno …» se la cartella è enorme e il calcolo si ferma dopo qualche secondo).
+* **Cursore subito nella ricerca** quando la barra compare dal bordo: si scrive senza fare clic. La barra resta finché non premi Esc o fai clic altrove. Si disattiva da *Impostazioni → Generale* se preferisci che il bordo non tolga il fuoco all'app in uso.
+* **Separatori**: linee sottili tra i tasti, anche dentro i contenitori. Si aggiungono dal tasto destro su un tasto («Aggiungi un separatore qui»), dal **+** o dalle impostazioni; si trascinano e si tolgono come i tasti.
+* **Sfoglia…** per scegliere le cartelle da indicizzare o da saltare, oltre a scriverle.
+
 ## 🆕 Versione 1.2.0
 * **Setup di installazione** (`WinTools-Setup.exe`, Inno Setup): installazione per utente senza amministratore in `%LOCALAPPDATA%\Programs\WinTools`, collegamento nel menu Start, icona sul desktop a scelta, avvio con Windows (spuntato) e avvio al termine. Chiude da solo la barra in esecuzione prima di aggiornare i file. La disinstallazione toglie la voce di avvio e chiede se eliminare anche impostazioni e indice. L'exe portatile resta disponibile.
 * `Build.ps1` compila anche il setup se trova Inno Setup; `Publish.ps1` allega entrambi i file alla release.

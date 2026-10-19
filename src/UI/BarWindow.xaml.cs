@@ -28,6 +28,7 @@ namespace WinTools.UI
         {
             Button = b;
             ShowLabels = showLabels;
+            if (b.Separator) { Glyph = ""; return; }
             if (ButtonVm.IsGlyph(b.Icon)) Glyph = ((char)Convert.ToInt32(b.Icon, 16)).ToString();
             else if (b.Group && string.IsNullOrEmpty(b.Icon)) Glyph = "";
             else
@@ -44,11 +45,18 @@ namespace WinTools.UI
         public static bool IsGlyph(string s) => !string.IsNullOrEmpty(s) && s.Length == 4 && s.All(Uri.IsHexDigit);
         public bool ShowLabels { get; }
         public bool IsGroup => Button.Group;
+        public bool IsSeparator => Button.Separator;
+        public Visibility SeparatorVisibility => IsSeparator ? Visibility.Visible : Visibility.Collapsed;
+        public Visibility ContentVisibility => IsSeparator ? Visibility.Collapsed : Visibility.Visible;
+        public double MinWidth => IsSeparator ? 0 : 56;
+        public Thickness Pad => IsSeparator ? new Thickness(5, 4, 5, 4) : new Thickness(10, 4, 10, 4);
+        public Thickness GroupPad => IsSeparator ? new Thickness(10, 2, 10, 2) : new Thickness(10, 6, 10, 6);
         public string Label => Button.Label;
         public string Tooltip
         {
             get
             {
+                if (IsSeparator) return "Separatore · trascinalo per spostarlo, tasto destro per toglierlo";
                 if (IsGroup) return $"{Button.Label}\n{Button.Children.Count} {(Button.Children.Count == 1 ? "tasto" : "tasti")} · clic per aprire, trascina qui un tasto per aggiungerlo";
                 if (string.IsNullOrEmpty(Button.Label)) return Button.Target;
                 return (Button.IconOnly || !ShowLabels ? Button.Label + "\n" : "") + Button.Target + (Button.Admin ? "  (amministratore)" : "");
@@ -71,12 +79,13 @@ namespace WinTools.UI
         void Raise(string n) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(n));
     }
 
-    /// <summary>Un risultato per l'elenco.</summary>
+    /// <summary>Un risultato per l'elenco. Per le cartelle la dimensione si calcola in sottofondo, finché l'elenco resta quello.</summary>
     public sealed class ResultVm : INotifyPropertyChanged
     {
         public SearchHit Hit { get; }
         ImageSource _icon;
-        public ResultVm(SearchHit h)
+        string _meta;
+        public ResultVm(SearchHit h, System.Threading.CancellationToken token)
         {
             Hit = h;
             if (h.IconKey != null && h.IconKey.StartsWith("glyph:")) Glyph = ((char)Convert.ToInt32(h.IconKey.Substring(6), 16)).ToString();
@@ -89,11 +98,37 @@ namespace WinTools.UI
             if (h.Kind == HitKind.File) { meta.Add(h.KindLabel); if (h.Size > 0) meta.Add(Tools.FormatSize(h.Size)); }
             else if (h.Kind == HitKind.Folder) meta.Add("Cartella");
             if (h.Modified.Year > 1980) meta.Add(Tools.FormatDate(h.Modified));
-            Meta = string.Join(" · ", meta);
+            _meta = string.Join(" · ", meta);
+            if (h.Kind == HitKind.Folder) StartFolderSize(h, token);
         }
+
+        void StartFolderSize(SearchHit h, System.Threading.CancellationToken token)
+        {
+            FolderSize.Result cached;
+            if (FolderSize.TryCached(h.Path, out cached)) { ApplyFolderSize(h, cached); return; }
+            _meta = "Cartella · calcolo…" + (h.Modified.Year > 1980 ? " · " + Tools.FormatDate(h.Modified) : "");
+            var disp = Dispatcher.CurrentDispatcher;
+            Task.Run(() =>
+            {
+                try
+                {
+                    var r = FolderSize.Compute(h.Path, token, TimeSpan.FromSeconds(6));
+                    if (token.IsCancellationRequested) return;
+                    disp.BeginInvoke(new Action(() => ApplyFolderSize(h, r)));
+                }
+                catch { }
+            }, token);
+        }
+
+        void ApplyFolderSize(SearchHit h, FolderSize.Result r)
+        {
+            string size = (r.Partial ? "almeno " : "") + Tools.FormatSize(r.Bytes);
+            Meta = "Cartella · " + size + (h.Modified.Year > 1980 ? " · " + Tools.FormatDate(h.Modified) : "");
+        }
+
         public string Title => Hit.Title;
         public string Subtitle => Hit.Subtitle;
-        public string Meta { get; }
+        public string Meta { get => _meta; private set { _meta = value; Raise("Meta"); } }
         public string Glyph { get; }
         public ImageSource Icon => _icon;
         public Visibility ImageVisibility => _icon != null ? Visibility.Visible : Visibility.Collapsed;
@@ -253,6 +288,26 @@ namespace WinTools.UI
             UpdateStatus();
         }
 
+        bool _autoFocus;
+
+        /// <summary>
+        /// Comparsa dal bordo: se l'opzione è attiva, la finestra si attiva e il cursore va nella ricerca (si può scrivere
+        /// subito); la barra resta finché è attiva, poi si ritira quando il fuoco va altrove o con Esc.
+        /// </summary>
+        public void ShowFromEdge(Forms.Screen screen)
+        {
+            ShowBar(false, screen);
+            if (!S.FocusOnEdge) return;
+            _noActivate = false;
+            Native.SetNoActivate(_hwnd, false);
+            Activate();
+            Native.ForceForeground(_hwnd);
+            _autoFocus = true;
+            try { SearchBox.Focus(); Keyboard.Focus(SearchBox); }
+            finally { _autoFocus = false; }
+            KeepOpen = Notice.Visibility == Visibility.Visible;
+        }
+
         /// <summary>Toglie il «non attivabile» e porta la finestra in primo piano; con un clic nella ricerca, fuoco alla casella.</summary>
         void EnsureActive(DependencyObject source)
         {
@@ -380,7 +435,7 @@ namespace WinTools.UI
         {
             var btn = sender as Button;
             var vm = btn?.Tag as ButtonVm;
-            if (vm == null || (_drag != null && _drag.Active)) return;
+            if (vm == null || vm.IsSeparator || (_drag != null && _drag.Active)) return;
             if (vm.IsGroup) { OpenGroup(vm.Button, btn); return; }
             Tools.Launch(vm.Button);
             if (!S.Pinned) HideBar();
@@ -652,7 +707,12 @@ namespace WinTools.UI
             var m = btn.ContextMenu;
             m.Items.Clear();
             var b = vm.Button;
-            if (b.Group)
+            if (b.Separator)
+            {
+                m.Items.Add(MoveToMenu(b));
+                m.Items.Add(Menu("Rimuovi il separatore", "", () => { S.DetachButton(b.Id); CommitButtons(); }));
+            }
+            else if (b.Group)
             {
                 m.Items.Add(Menu("Apri", "", () => OpenGroup(b, btn)));
                 m.Items.Add(new Separator());
@@ -672,6 +732,7 @@ namespace WinTools.UI
             m.Items.Add(new Separator());
             m.Items.Add(Menu("Aggiungi un tasto…", "", () => AddButton(false)));
             m.Items.Add(Menu("Aggiungi un contenitore…", "", () => AddButton(true)));
+            m.Items.Add(Menu("Aggiungi un separatore qui", "", () => AddSeparatorAfter(b)));
         }
 
         void AddButton_ContextMenuOpening(object sender, ContextMenuEventArgs e)
@@ -682,6 +743,17 @@ namespace WinTools.UI
             btn.ContextMenu.Items.Clear();
             btn.ContextMenu.Items.Add(Menu("Aggiungi un tasto…", "", () => AddButton(false)));
             btn.ContextMenu.Items.Add(Menu("Aggiungi un contenitore…", "", () => AddButton(true)));
+            btn.ContextMenu.Items.Add(Menu("Aggiungi un separatore", "", () => AddSeparatorAfter(null)));
+        }
+
+        /// <summary>Un separatore subito dopo il tasto indicato (nello stesso elenco), oppure in fondo alla barra.</summary>
+        void AddSeparatorAfter(BarButton after)
+        {
+            var sep = new BarButton { Separator = true };
+            List<BarButton> owner = null;
+            var cur = after == null ? null : S.FindButton(after.Id, out owner);
+            if (cur != null) owner.Insert(owner.IndexOf(cur) + 1, sep); else S.Buttons.Add(sep);
+            CommitButtons();
         }
 
         /// <summary>«Sposta in»: i contenitori esistenti, oppure uno nuovo creato al volo con dentro questo tasto.</summary>
@@ -820,7 +892,7 @@ namespace WinTools.UI
         void GroupItem_Click(object sender, RoutedEventArgs e)
         {
             var vm = (sender as Button)?.Tag as ButtonVm;
-            if (vm == null || (_drag != null && _drag.Active)) return;
+            if (vm == null || vm.IsSeparator || (_drag != null && _drag.Active)) return;
             GroupPopup.IsOpen = false;
             Tools.Launch(vm.Button);
             if (!S.Pinned) HideBar();
@@ -834,12 +906,20 @@ namespace WinTools.UI
             var b = vm.Button;
             var m = btn.ContextMenu;
             m.Items.Clear();
+            if (b.Separator)
+            {
+                m.Items.Add(MoveToMenu(b));
+                m.Items.Add(Menu("Rimuovi il separatore", "", () => { S.DetachButton(b.Id); CommitButtons(); }));
+                return;
+            }
             m.Items.Add(Menu("Apri", "", () => { GroupPopup.IsOpen = false; Tools.Launch(b); if (!S.Pinned) HideBar(); }));
             m.Items.Add(Menu("Apri come amministratore", "", () => Tools.Open(b.Target, b.Arguments, b.WorkingDir, true)));
             m.Items.Add(new Separator());
             m.Items.Add(MoveToMenu(b));
             m.Items.Add(Menu("Modifica…", "", () => EditButton(b)));
             m.Items.Add(Menu("Rimuovi", "", () => { S.DetachButton(b.Id); CommitButtons(); }));
+            m.Items.Add(new Separator());
+            m.Items.Add(Menu("Aggiungi un separatore qui", "", () => AddSeparatorAfter(b)));
         }
 
         void GroupPopup_DragOver(object sender, DragEventArgs e)
@@ -861,7 +941,7 @@ namespace WinTools.UI
         // ------------------------------------------------------------------ ricerca
         void SearchBox_GotFocus(object sender, KeyboardFocusChangedEventArgs e)
         {
-            KeepOpen = true;
+            if (!_autoFocus) KeepOpen = true;
             if (SearchBox.Text.Length == 0) ShowRecents();
         }
 
@@ -970,10 +1050,15 @@ namespace WinTools.UI
             }, TaskScheduler.FromCurrentSynchronizationContext());
         }
 
+        System.Threading.CancellationTokenSource _resultsCts = new System.Threading.CancellationTokenSource();
+
         void SetResults(List<SearchHit> hits, bool selectFirst)
         {
+            // I calcoli in sottofondo dell'elenco precedente (dimensioni delle cartelle) si fermano
+            _resultsCts.Cancel();
+            _resultsCts = new System.Threading.CancellationTokenSource();
             _results.Clear();
-            foreach (var h in hits) _results.Add(new ResultVm(h));
+            foreach (var h in hits) _results.Add(new ResultVm(h, _resultsCts.Token));
             Results.Visibility = _results.Count > 0 || App.Current.Index.Status.Scanning ? Visibility.Visible : Visibility.Collapsed;
             if (selectFirst && _results.Count > 0) { ResultsList.SelectedIndex = 0; ResultsList.ScrollIntoView(_results[0]); }
             HintText.Visibility = _results.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -1045,9 +1130,21 @@ namespace WinTools.UI
             m.Items.Add(Menu("Apri", "", () => OpenHit(item.Hit, false, false)));
             if (item.Hit.Kind != HitKind.App)
             {
+                string path = item.Hit.Path;
+                bool isFolder = item.Hit.Kind == HitKind.Folder;
+                string folder = isFolder ? path : (Path.GetDirectoryName(path) ?? path);
                 m.Items.Add(Menu("Apri la cartella", "", () => OpenHit(item.Hit, true, false)));
-                if (item.Hit.Kind == HitKind.File && item.Hit.Path.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) m.Items.Add(Menu("Apri come amministratore", "", () => OpenHit(item.Hit, false, true)));
-                m.Items.Add(Menu("Copia il percorso", "", () => Tools.CopyToClipboard(item.Hit.Path)));
+                if (item.Hit.Kind == HitKind.File && path.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) m.Items.Add(Menu("Apri come amministratore", "", () => OpenHit(item.Hit, false, true)));
+                m.Items.Add(new Separator());
+                // Come in Esplora file: negli appunti come file, da incollare ovunque
+                m.Items.Add(Menu("Copia", "", () => Tools.CopyFileToClipboard(path, false)));
+                m.Items.Add(Menu("Taglia", "", () => Tools.CopyFileToClipboard(path, true)));
+                var paste = Menu(isFolder ? "Incolla qui" : "Incolla nella cartella", "", () => { Tools.PasteInto(folder); if (!S.Pinned) HideBar(); });
+                paste.IsEnabled = Tools.ClipboardFiles().Count > 0;
+                m.Items.Add(paste);
+                m.Items.Add(Menu("Copia il percorso", "", () => Tools.CopyToClipboard(path)));
+                m.Items.Add(new Separator());
+                m.Items.Add(Menu("Proprietà", "", () => { Tools.ShowProperties(path); if (!S.Pinned) HideBar(); }));
             }
             m.Items.Add(new Separator());
             m.Items.Add(Menu("Aggiungi alla barra", "", () =>

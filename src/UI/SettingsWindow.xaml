@@ -123,6 +123,13 @@
               </Border>
               <Border Style="{StaticResource SettingCard}">
                 <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <StackPanel><TextBlock Text="Cursore subito nella ricerca quando compare dal bordo" Style="{StaticResource RowLabel}"/><TextBlock Text="Si può scrivere senza fare clic. Toglie il fuoco all'app in uso: la barra resta finché non premi Esc o fai clic altrove." Style="{StaticResource RowDesc}"/></StackPanel>
+                  <ToggleButton Grid.Column="1" x:Name="FocusEdgeBox" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"/>
+                </Grid>
+              </Border>
+              <Border Style="{StaticResource SettingCard}">
+                <Grid>
                   <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                   <StackPanel><TextBlock Text="Tempi" Style="{StaticResource RowLabel}"/><TextBlock Text="Millisecondi sul bordo prima che compaia · millisecondi lontano dalla barra prima che si ritiri." Style="{StaticResource RowDesc}"/></StackPanel>
                   <TextBox Grid.Column="1" x:Name="EdgeDelayBox" Width="80" VerticalAlignment="Center" TextAlignment="Right"/>
@@ -161,6 +168,7 @@
               <WrapPanel Margin="0,6,0,10">
                 <Button Content="Aggiungi…" Style="{StaticResource AccentButton}" Click="AddButton_Click" Margin="0,0,8,6"/>
                 <Button Content="Aggiungi contenitore…" Click="AddGroup_Click" Margin="0,0,8,6"/>
+                <Button Content="Aggiungi separatore" Click="AddSeparator_Click" Margin="0,0,8,6"/>
                 <Button Content="Modifica…" Click="EditButton_Click" Margin="0,0,8,6"/>
                 <Button Content="Rimuovi" Click="RemoveButton_Click" Margin="0,0,8,6"/>
                 <Button Content="Su" Click="UpButton_Click" Margin="0,0,8,6" MinWidth="48"/>
@@ -217,6 +225,7 @@
                   <TextBlock Text="Cartelle da indicizzare" Style="{StaticResource RowLabel}"/>
                   <TextBlock Text="Una per riga. Vuoto = tutte le unità fisse (C:\, D:\…). Si possono usare le variabili, es. %USERPROFILE%." Style="{StaticResource RowDesc}"/>
                   <TextBox x:Name="RootsBox" AcceptsReturn="True" MinHeight="64" MaxHeight="140" VerticalScrollBarVisibility="Auto" Margin="0,8,0,0" FontFamily="Cascadia Mono, Consolas" FontSize="12.5"/>
+                  <Button Content="Sfoglia…" HorizontalAlignment="Left" Margin="0,8,0,0" Padding="14,5" Click="BrowseRoot_Click" ToolTip="Scegli una cartella da aggiungere all'elenco"/>
                 </StackPanel>
               </Border>
               <Border Style="{StaticResource SettingCard}">
@@ -224,7 +233,10 @@
                   <TextBlock Text="Cartelle da saltare" Style="{StaticResource RowLabel}"/>
                   <TextBlock Text="Una per riga. Un nome (node_modules) salta tutte le cartelle con quel nome; un percorso (%SystemRoot%, D:\Backup) salta solo quello." Style="{StaticResource RowDesc}"/>
                   <TextBox x:Name="ExcludeBox" AcceptsReturn="True" MinHeight="90" MaxHeight="200" VerticalScrollBarVisibility="Auto" Margin="0,8,0,0" FontFamily="Cascadia Mono, Consolas" FontSize="12.5"/>
-                  <Button Content="Ripristina l'elenco predefinito" Style="{StaticResource SubtleButton}" HorizontalAlignment="Left" Margin="0,6,0,0" Click="ResetExcludes_Click"/>
+                  <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                    <Button Content="Sfoglia…" Padding="14,5" Click="BrowseExclude_Click" ToolTip="Scegli una cartella da saltare"/>
+                    <Button Content="Ripristina l'elenco predefinito" Style="{StaticResource SubtleButton}" Margin="8,0,0,0" Click="ResetExcludes_Click"/>
+                  </StackPanel>
                 </StackPanel>
               </Border>
               <Border Style="{StaticResource SettingCard}">

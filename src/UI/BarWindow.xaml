@@ -10,22 +10,27 @@
     <!-- Un tasto della barra (il menu contestuale si riempie nel codice: dipende dal tipo di tasto) -->
     <DataTemplate x:Key="BarButtonTemplate">
       <Button Style="{StaticResource BarButtonStyle}" Tag="{Binding}" ToolTip="{Binding Tooltip}" Click="BarButton_Click" Opacity="{Binding DragOpacity}"
+              MinWidth="{Binding MinWidth}" Padding="{Binding Pad}"
               PreviewMouseLeftButtonDown="BarButton_MouseDown" PreviewMouseMove="BarButton_MouseMove" PreviewMouseLeftButtonUp="BarButton_MouseUp"
               ContextMenuOpening="BarButton_ContextMenuOpening" AllowDrop="True" Drop="Buttons_Drop" DragOver="Buttons_DragOver">
         <Button.ContextMenu><ContextMenu/></Button.ContextMenu>
         <Border BorderBrush="{Binding DropBrush}" BorderThickness="2" CornerRadius="6" Margin="-7,-3" Padding="5,1">
-          <StackPanel Orientation="Vertical" MinWidth="40">
-            <Grid Width="26" Height="26" HorizontalAlignment="Center">
-              <Image Source="{Binding Icon}" Width="24" Height="24" Visibility="{Binding ImageVisibility}" RenderOptions.BitmapScalingMode="HighQuality"/>
-              <TextBlock Style="{StaticResource Glyph}" Text="{Binding Glyph}" FontSize="20" Visibility="{Binding GlyphVisibility}" Foreground="{DynamicResource Accent}"/>
-              <Border Visibility="{Binding GroupBadgeVisibility}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-5,-4"
-                      Background="{DynamicResource BarFill}" CornerRadius="6" Padding="2,0">
-                <TextBlock Style="{StaticResource Glyph}" Text="&#xE70D;" FontSize="8" Foreground="{DynamicResource TextSecondary}"/>
-              </Border>
-            </Grid>
-            <TextBlock Text="{Binding Label}" FontSize="11" Margin="0,3,0,0" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="96"
-                       Visibility="{Binding LabelVisibility}" Foreground="{DynamicResource TextSecondary}"/>
-          </StackPanel>
+          <Grid>
+            <!-- separatore: una linea sottile al posto di icona ed etichetta -->
+            <Border Width="1" Height="34" Background="{DynamicResource Divider}" Margin="1,0" Visibility="{Binding SeparatorVisibility}"/>
+            <StackPanel Orientation="Vertical" MinWidth="40" Visibility="{Binding ContentVisibility}">
+              <Grid Width="26" Height="26" HorizontalAlignment="Center">
+                <Image Source="{Binding Icon}" Width="24" Height="24" Visibility="{Binding ImageVisibility}" RenderOptions.BitmapScalingMode="HighQuality"/>
+                <TextBlock Style="{StaticResource Glyph}" Text="{Binding Glyph}" FontSize="20" Visibility="{Binding GlyphVisibility}" Foreground="{DynamicResource Accent}"/>
+                <Border Visibility="{Binding GroupBadgeVisibility}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-5,-4"
+                        Background="{DynamicResource BarFill}" CornerRadius="6" Padding="2,0">
+                  <TextBlock Style="{StaticResource Glyph}" Text="&#xE70D;" FontSize="8" Foreground="{DynamicResource TextSecondary}"/>
+                </Border>
+              </Grid>
+              <TextBlock Text="{Binding Label}" FontSize="11" Margin="0,3,0,0" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="96"
+                         Visibility="{Binding LabelVisibility}" Foreground="{DynamicResource TextSecondary}"/>
+            </StackPanel>
+          </Grid>
         </Border>
       </Button>
     </DataTemplate>
@@ -34,15 +39,18 @@
     <DataTemplate x:Key="GroupItemTemplate">
       <Button Style="{StaticResource SubtleButton}" HorizontalContentAlignment="Left" Tag="{Binding}" ToolTip="{Binding Tooltip}" Click="GroupItem_Click" Opacity="{Binding DragOpacity}"
               PreviewMouseLeftButtonDown="BarButton_MouseDown" PreviewMouseMove="BarButton_MouseMove" PreviewMouseLeftButtonUp="BarButton_MouseUp"
-              ContextMenuOpening="GroupItem_ContextMenuOpening" Padding="10,6" MinWidth="220" HorizontalAlignment="Stretch">
+              ContextMenuOpening="GroupItem_ContextMenuOpening" Padding="{Binding GroupPad}" MinWidth="220" HorizontalAlignment="Stretch">
         <Button.ContextMenu><ContextMenu/></Button.ContextMenu>
-        <StackPanel Orientation="Horizontal">
-          <Grid Width="22" Height="22" Margin="0,0,12,0">
-            <Image Source="{Binding Icon}" Width="20" Height="20" Visibility="{Binding ImageVisibility}" RenderOptions.BitmapScalingMode="HighQuality"/>
-            <TextBlock Style="{StaticResource Glyph}" Text="{Binding Glyph}" FontSize="17" Visibility="{Binding GlyphVisibility}" Foreground="{DynamicResource Accent}"/>
-          </Grid>
-          <TextBlock Text="{Binding Label}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="260"/>
-        </StackPanel>
+        <Grid>
+          <Border Height="1" Background="{DynamicResource Divider}" Margin="2,3" Visibility="{Binding SeparatorVisibility}"/>
+          <StackPanel Orientation="Horizontal" Visibility="{Binding ContentVisibility}">
+            <Grid Width="22" Height="22" Margin="0,0,12,0">
+              <Image Source="{Binding Icon}" Width="20" Height="20" Visibility="{Binding ImageVisibility}" RenderOptions.BitmapScalingMode="HighQuality"/>
+              <TextBlock Style="{StaticResource Glyph}" Text="{Binding Glyph}" FontSize="17" Visibility="{Binding GlyphVisibility}" Foreground="{DynamicResource Accent}"/>
+            </Grid>
+            <TextBlock Text="{Binding Label}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="260"/>
+          </StackPanel>
+        </Grid>
       </Button>
     </DataTemplate>
 
