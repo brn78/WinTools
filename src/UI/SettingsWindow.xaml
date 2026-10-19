@@ -138,20 +138,6 @@
                 </Grid>
               </Border>
 
-              <TextBlock Text="File trascinati sulla barra" Style="{StaticResource Section}"/>
-              <Border Style="{StaticResource SettingCard}">
-                <Grid>
-                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                  <StackPanel><TextBlock Text="Conserva una copia dei file piccoli nell'archivio di WinTools" Style="{StaticResource RowLabel}"/><TextBlock Text="Un tasto creato da un file apre il file dov'è: se lo sposti o lo elimini smette di funzionare. Con questa opzione i file fino alla dimensione indicata vengono copiati in %LOCALAPPDATA%\WinTools\Archivio e il tasto apre la copia; togliendo il tasto la copia va nel Cestino. Cartelle e file più grandi restano collegamenti (l'avviso dopo il rilascio offre «Conserva copie»)." Style="{StaticResource RowDesc}"/></StackPanel>
-                  <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,16,0">
-                    <TextBlock Text="fino a" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                    <TextBox x:Name="AutoArchiveMbBox" Width="64" VerticalAlignment="Center" TextAlignment="Right"/>
-                    <TextBlock Text="MB" VerticalAlignment="Center" Margin="6,0,0,0"/>
-                  </StackPanel>
-                  <ToggleButton Grid.Column="2" x:Name="AutoArchiveBox" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"/>
-                </Grid>
-              </Border>
-
               <TextBlock Text="Quando compare" Style="{StaticResource Section}"/>
               <Border Style="{StaticResource SettingCard}">
                 <Grid>

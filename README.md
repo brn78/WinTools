@@ -23,6 +23,8 @@ In entrambi i casi l'aggiornamento automatico sostituisce l'exe sul posto.
 * **Spillo**: blocca la barra sempre visibile. **Ingranaggio**: impostazioni.
 * **Area di notifica**: clic sinistro mostra la barra, clic destro apre il menu (blocca, impostazioni, aggiorna l'indice, avvio con Windows, aggiornamenti, esci).
 
+## 🆕 Versione 1.9.1
+* **Tolta la copia dei file nell'archivio** (automatica, «Conserva copie» e la voce nel menu): i tasti creati da un file restano collegamenti al file dov'è, con l'avviso dopo il rilascio e, se il file sparisce, il triangolo di avviso con «Ripristina dal Cestino» e «Cerca nell'indice». Motivo: su alcuni PC Esplora file non apre le cartelle create sotto AppData, e «Apri il percorso del file» falliva sulle copie. L'archivio resta solo per i file .rdp generati dal riquadro Desktop remoto.
 ## 🆕 Versione 1.9.0
 * **Copia automatica dei file trascinati**: i file fino a 20 MB (soglia e interruttore in Generale → «File trascinati sulla barra») vengono copiati nell'archivio di WinTools e il tasto apre la copia, così l'originale può essere spostato o eliminato. Cartelle e file più grandi restano collegamenti, con l'avviso e «Conserva copie» come prima.
 * **Rimuovendo un tasto se ne elimina anche la copia** dall'archivio (nel Cestino, per sicurezza); gli originali non si toccano mai. Nel menu di un tasto che apre una copia c'è **«Aggiorna la copia dall'originale»** se l'originale esiste ancora; il suggerimento mostra da dove viene.
