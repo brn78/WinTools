@@ -27,6 +27,11 @@
                         Background="{DynamicResource BarFill}" CornerRadius="6" Padding="2,0">
                   <TextBlock Style="{StaticResource Glyph}" Text="&#xE70D;" FontSize="8" Foreground="{DynamicResource TextSecondary}"/>
                 </Border>
+                <!-- file o cartella che non c'è più: triangolo di avviso -->
+                <Border Visibility="{Binding MissingVisibility}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-5,-7,0"
+                        Background="{DynamicResource BarFill}" CornerRadius="7" Padding="1">
+                  <TextBlock Style="{StaticResource Glyph}" Text="&#xE7BA;" FontSize="11" Foreground="{DynamicResource WarnText}"/>
+                </Border>
               </Grid>
               <TextBlock Text="{Binding Label}" FontSize="11" Margin="0,3,0,0" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="96"
                          Visibility="{Binding LabelVisibility}" Foreground="{DynamicResource TextSecondary}"/>
@@ -54,6 +59,10 @@
               <Image Source="{Binding Icon}" Width="20" Height="20" Visibility="{Binding ImageVisibility}" RenderOptions.BitmapScalingMode="HighQuality"/>
               <Path Data="{Binding Mdi}" Fill="{Binding IconBrush}" Stretch="Uniform" Width="19" Height="19" Visibility="{Binding MdiVisibility}"/>
               <TextBlock Style="{StaticResource Glyph}" Text="{Binding Glyph}" FontSize="17" Visibility="{Binding GlyphVisibility}" Foreground="{Binding IconBrush}"/>
+              <Border Visibility="{Binding MissingVisibility}" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-5,-6,0"
+                      Background="{DynamicResource DialogFill}" CornerRadius="6" Padding="1">
+                <TextBlock Style="{StaticResource Glyph}" Text="&#xE7BA;" FontSize="10" Foreground="{DynamicResource WarnText}"/>
+              </Border>
             </Grid>
             <TextBlock Text="{Binding Label}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="260"/>
           </StackPanel>
