@@ -25,7 +25,7 @@ In entrambi i casi l'aggiornamento automatico sostituisce l'exe sul posto.
 
 ## 🆕 Versione 1.3.1
 * I **recenti** non compaiono più da soli quando la barra prende il fuoco: con la casella vuota li chiami con la **freccia giù**. L'elenco si apre solo scrivendo.
-* **Bordo della casella colorato**: verde quando la ricerca trova qualcosa, rosso quando non trova niente.
+* **Bordo della casella colorato**: colore di accento quando ha il fuoco, verde quando la ricerca trova qualcosa, rosso quando non trova niente.
 * I recenti che non esistono più (file spostati o eliminati) spariscono dall'elenco da soli.
 
 ## 🆕 Versione 1.3.0
