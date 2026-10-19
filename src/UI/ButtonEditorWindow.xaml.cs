@@ -21,7 +21,7 @@ namespace WinTools.UI
             InitializeComponent();
             FluentWindow.Setup(this);
             _button = button;
-            Heading.Text = string.IsNullOrEmpty(button.Target) ? "Nuovo tasto" : "Modifica tasto";
+            Heading.Text = button.Group ? (string.IsNullOrEmpty(button.Label) ? "Nuovo contenitore" : "Modifica contenitore") : string.IsNullOrEmpty(button.Target) ? "Nuovo tasto" : "Modifica tasto";
 
             // Strumenti di Windows raggruppati
             PresetBox.Items.Add(new ComboBoxItem { Content = "Scegli uno strumento…", IsEnabled = false, Foreground = (Brush)FindResource("TextTertiary") });
@@ -58,9 +58,33 @@ namespace WinTools.UI
             if (ButtonVm.IsGlyph(button.Icon)) { _glyph = button.Icon; IconGlyph.IsChecked = true; foreach (ToggleButton o in GlyphWrap.Children) o.IsChecked = (string)o.Tag == button.Icon; }
             else if (!string.IsNullOrEmpty(button.Icon)) { IconFile.IsChecked = true; ImageBox.Text = button.Icon; }
             else IconAuto.IsChecked = true;
+            GroupBox.IsChecked = button.Group;
             _loading = false;
+            GroupBox_Changed(null, null);
             IconMode_Changed(null, null);
             LabelBox.Focus();
+        }
+
+        /// <summary>Contenitore: niente bersaglio, argomenti o amministratore; l'icona è un simbolo (o un'immagine).</summary>
+        void GroupBox_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_loading) return;
+            bool group = GroupBox.IsChecked == true;
+            var hide = group ? Visibility.Collapsed : Visibility.Visible;
+            PresetCard.Visibility = hide;
+            TargetLabel.Visibility = hide; TargetBox.Visibility = hide; BrowsePanel.Visibility = hide;
+            ArgsLabel.Visibility = hide; ArgsBox.Visibility = hide;
+            WorkDirLabel.Visibility = hide; WorkDirBox.Visibility = hide;
+            AdminBox.Visibility = hide;
+            IconAuto.Visibility = hide;
+            if (group && IconAuto.IsChecked == true)
+            {
+                if (!ButtonVm.IsGlyph(_glyph)) _glyph = "E8B7";
+                IconGlyph.IsChecked = true;
+                foreach (ToggleButton o in GlyphWrap.Children) o.IsChecked = (string)o.Tag == _glyph;
+            }
+            Heading.Text = group ? (string.IsNullOrEmpty(_button.Label) ? "Nuovo contenitore" : "Modifica contenitore") : string.IsNullOrEmpty(_button.Target) ? "Nuovo tasto" : "Modifica tasto";
+            UpdatePreview();
         }
 
         void PresetBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -137,6 +161,25 @@ namespace WinTools.UI
 
         void Ok_Click(object sender, RoutedEventArgs e)
         {
+            if (GroupBox.IsChecked == true)
+            {
+                string name = LabelBox.Text.Trim();
+                if (name == "")
+                {
+                    MessageBox.Show(this, "Dai un nome al contenitore.", Program.Title, MessageBoxButton.OK, MessageBoxImage.Information);
+                    LabelBox.Focus();
+                    return;
+                }
+                _button.Group = true;
+                _button.Label = name;
+                _button.Target = ""; _button.Arguments = ""; _button.WorkingDir = ""; _button.Admin = false;
+                _button.IconOnly = IconOnlyBox.IsChecked == true;
+                _button.Icon = IconFile.IsChecked == true ? ImageBox.Text.Trim() : (ButtonVm.IsGlyph(_glyph) ? _glyph : "E8B7");
+                DialogResult = true;
+                return;
+            }
+            // Un contenitore che torna tasto normale: i tasti che aveva dentro restano con chi lo modifica (BarWindow li rimette sulla barra)
+            _button.Group = false;
             string target = TargetBox.Text.Trim();
             if (target == "")
             {

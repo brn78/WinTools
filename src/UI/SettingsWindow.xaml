@@ -160,6 +160,7 @@
               <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
               <WrapPanel Margin="0,6,0,10">
                 <Button Content="Aggiungi…" Style="{StaticResource AccentButton}" Click="AddButton_Click" Margin="0,0,8,6"/>
+                <Button Content="Aggiungi contenitore…" Click="AddGroup_Click" Margin="0,0,8,6"/>
                 <Button Content="Modifica…" Click="EditButton_Click" Margin="0,0,8,6"/>
                 <Button Content="Rimuovi" Click="RemoveButton_Click" Margin="0,0,8,6"/>
                 <Button Content="Su" Click="UpButton_Click" Margin="0,0,8,6" MinWidth="48"/>
@@ -245,6 +246,20 @@
                   <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                   <StackPanel><TextBlock Text="Rilettura completa ogni (ore)" Style="{StaticResource RowLabel}"/><TextBlock Text="Le modifiche si seguono di continuo; ogni tanto si rilegge tutto per sicurezza. 0 = solo all'avvio senza indice e a mano." Style="{StaticResource RowDesc}"/></StackPanel>
                   <TextBox Grid.Column="1" x:Name="RescanHoursBox" Width="80" VerticalAlignment="Center" TextAlignment="Right"/>
+                </Grid>
+              </Border>
+              <Border Style="{StaticResource SettingCard}">
+                <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <StackPanel><TextBlock Text="All'avvio di Windows, rileggi i file dopo (minuti)" Style="{StaticResource RowLabel}"/><TextBlock Text="Il PC appena acceso ha già da fare: l'indice salvato è subito disponibile, la rilettura completa aspetta. 0 = subito." Style="{StaticResource RowDesc}"/></StackPanel>
+                  <TextBox Grid.Column="1" x:Name="StartupDelayBox" Width="80" VerticalAlignment="Center" TextAlignment="Right"/>
+                </Grid>
+              </Border>
+              <Border Style="{StaticResource SettingCard}">
+                <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <StackPanel><TextBlock x:Name="RecentText" Text="Recenti" Style="{StaticResource RowLabel}"/><TextBlock Text="Gli ultimi elementi aperti dalla ricerca, mostrati con la casella vuota. Nella barra: Canc ne toglie uno, il tasto destro svuota tutto." Style="{StaticResource RowDesc}"/></StackPanel>
+                  <Button Grid.Column="1" x:Name="ClearRecentButton" Content="Svuota i recenti" Click="ClearRecent_Click" VerticalAlignment="Center"/>
                 </Grid>
               </Border>
             </StackPanel>

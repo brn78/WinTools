@@ -73,7 +73,9 @@ namespace WinTools
             RegisterHotkey();
             Tools.SetAutoStart(Settings.AutoStart);
 
-            if (Settings.Index.Enabled) Index.Start(Settings.Index);
+            bool autostart = e.Args.Any(a => a.Equals("--autostart", StringComparison.OrdinalIgnoreCase));
+            bool updated = e.Args.Any(a => a.Equals("--updated", StringComparison.OrdinalIgnoreCase));
+            if (Settings.Index.Enabled) Index.Start(Settings.Index, autostart ? TimeSpan.FromMinutes(Settings.Index.StartupDelayMinutes) : TimeSpan.Zero);
             if (Settings.Index.Apps) Apps.Start();
 
             _edgeTimer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(50) };
@@ -87,8 +89,6 @@ namespace WinTools
             _updateTimer.Start();
             if (Settings.AutoUpdate) Task.Delay(8000).ContinueWith(_ => Updates.CheckAsync(false));
 
-            bool autostart = e.Args.Any(a => a.Equals("--autostart", StringComparison.OrdinalIgnoreCase));
-            bool updated = e.Args.Any(a => a.Equals("--updated", StringComparison.OrdinalIgnoreCase));
             if (Settings.Pinned) ShowBar(false);
             else if (!autostart) ShowBar(true);
             if (updated) Bar.ShowNotice("success", $"WinTools aggiornato alla versione {Program.Version}", "La versione precedente è stata eliminata.");

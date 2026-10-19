@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -18,7 +19,7 @@ using Forms = System.Windows.Forms;
 
 namespace WinTools.UI
 {
-    /// <summary>Un tasto della barra per l'interfaccia: etichetta, icona o glifo.</summary>
+    /// <summary>Un tasto della barra (o di un contenitore) per l'interfaccia: etichetta, icona o glifo.</summary>
     public sealed class ButtonVm : INotifyPropertyChanged
     {
         public BarButton Button { get; }
@@ -27,7 +28,8 @@ namespace WinTools.UI
         {
             Button = b;
             ShowLabels = showLabels;
-            if (IsGlyph(b.Icon)) Glyph = ((char)Convert.ToInt32(b.Icon, 16)).ToString();
+            if (ButtonVm.IsGlyph(b.Icon)) Glyph = ((char)Convert.ToInt32(b.Icon, 16)).ToString();
+            else if (b.Group && string.IsNullOrEmpty(b.Icon)) Glyph = "";
             else
             {
                 string key = string.IsNullOrEmpty(b.Icon) ? Tools.ResolveShortcut(Environment.ExpandEnvironmentVariables(b.Target)) : b.Icon;
@@ -41,13 +43,23 @@ namespace WinTools.UI
         }
         public static bool IsGlyph(string s) => !string.IsNullOrEmpty(s) && s.Length == 4 && s.All(Uri.IsHexDigit);
         public bool ShowLabels { get; }
+        public bool IsGroup => Button.Group;
         public string Label => Button.Label;
-        public string Tooltip => string.IsNullOrEmpty(Button.Label) ? Button.Target : (Button.IconOnly || !ShowLabels ? Button.Label + "\n" : "") + Button.Target + (Button.Admin ? "  (amministratore)" : "");
+        public string Tooltip
+        {
+            get
+            {
+                if (IsGroup) return $"{Button.Label}\n{Button.Children.Count} {(Button.Children.Count == 1 ? "tasto" : "tasti")} · clic per aprire, trascina qui un tasto per aggiungerlo";
+                if (string.IsNullOrEmpty(Button.Label)) return Button.Target;
+                return (Button.IconOnly || !ShowLabels ? Button.Label + "\n" : "") + Button.Target + (Button.Admin ? "  (amministratore)" : "");
+            }
+        }
         public string Glyph { get; private set; }
         public ImageSource Icon => _icon;
         public Visibility ImageVisibility => _icon != null ? Visibility.Visible : Visibility.Collapsed;
         public Visibility GlyphVisibility => _icon == null ? Visibility.Visible : Visibility.Collapsed;
         public Visibility LabelVisibility => ShowLabels && !Button.IconOnly && !string.IsNullOrEmpty(Button.Label) ? Visibility.Visible : Visibility.Collapsed;
+        public Visibility GroupBadgeVisibility => IsGroup ? Visibility.Visible : Visibility.Collapsed;
         public event PropertyChangedEventHandler PropertyChanged;
         void Raise(string n) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(n));
     }
@@ -84,12 +96,13 @@ namespace WinTools.UI
     }
 
     /// <summary>
-    /// La barra a comparsa: ricerca, tasti personalizzabili (trascinabili), risultati, avvisi. Compare dal bordo
-    /// dello schermo con una breve animazione e si nasconde da sola, a meno che non sia bloccata.
+    /// La barra a comparsa: ricerca, tasti personalizzabili (trascinabili, anche dentro contenitori), risultati, avvisi.
+    /// Compare dal bordo dello schermo con una breve animazione e si nasconde da sola, a meno che non sia bloccata.
     /// </summary>
     public partial class BarWindow : Window
     {
         readonly ObservableCollection<ButtonVm> _buttons = new ObservableCollection<ButtonVm>();
+        readonly ObservableCollection<ButtonVm> _groupItems = new ObservableCollection<ButtonVm>();
         readonly ObservableCollection<ResultVm> _results = new ObservableCollection<ResultVm>();
         readonly DispatcherTimer _searchTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(110) };
         readonly DispatcherTimer _noticeTimer = new DispatcherTimer();
@@ -97,31 +110,34 @@ namespace WinTools.UI
         IntPtr _hwnd;
         bool _hiding;
         bool _dialogOpen;
+        bool _noActivate;
+        bool _showingRecents;
         int _searchSerial;
         Action _noticeAction;
         Point _dragStart;
         ButtonVm _dragging;
+        BarButton _openGroup;
 
         AppSettings S => App.Current.Settings;
 
         /// <summary>La barra è visibile (anche durante l'animazione di uscita no).</summary>
         public bool IsBarVisible => IsVisible && !_hiding;
-        /// <summary>Non nascondersi quando il mouse si allontana: aperta con il tasto rapido, si sta scrivendo, c'è una finestra aperta o un avviso.</summary>
+        /// <summary>Non nascondersi quando il mouse si allontana: aperta con il tasto rapido, si sta scrivendo, c'è una finestra o un menu aperto, un avviso.</summary>
         public bool KeepOpen { get; private set; }
 
         public BarWindow()
         {
             InitializeComponent();
             ButtonsList.ItemsSource = _buttons;
+            GroupList.ItemsSource = _groupItems;
             ResultsList.ItemsSource = _results;
-            Logo.Source = App.WindowIcon();
             _searchTimer.Tick += (s, e) => { _searchTimer.Stop(); RunSearch(); };
             _noticeTimer.Tick += (s, e) => { _noticeTimer.Stop(); HideNotice(); };
             Deactivated += (s, e) =>
             {
                 // Il fuoco va altrove: la barra si ritira, a meno che non sia bloccata o ci sia un dialogo nostro aperto
                 if (_dialogOpen || S.Pinned) return;
-                Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() => { if (!IsActive && !_dialogOpen && !S.Pinned && IsBarVisible) HideBar(); }));
+                Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() => { if (!IsActive && !_dialogOpen && !S.Pinned && IsBarVisible && !GroupPopup.IsOpen) HideBar(); }));
             };
             DpiChanged += (s, e) => Reposition();
             // Comparsa dal bordo senza rubare il fuoco: al primo clic sulla barra la finestra si attiva davvero,
@@ -153,6 +169,7 @@ namespace WinTools.UI
         {
             _buttons.Clear();
             foreach (var b in S.Buttons) _buttons.Add(new ButtonVm(b, S.ShowLabels));
+            if (_openGroup != null) RefreshGroupItems();
             BarRow.Height = S.ShowLabels && S.Buttons.Any(b => !b.IconOnly && !string.IsNullOrEmpty(b.Label)) ? 64 : 52;
             PinGlyph.Text = S.Pinned ? "" : "";
             PinButton.ToolTip = S.Pinned ? "Sblocca la barra (si nasconde da sola)" : "Blocca la barra (sempre visibile)";
@@ -164,7 +181,15 @@ namespace WinTools.UI
             ((DropShadowEffect)Panel.Effect).Direction = bottom ? 90 : 270;
             DockPanel.SetDock(BarRow, bottom ? Dock.Bottom : Dock.Top);
             DockPanel.SetDock(Notice, bottom ? Dock.Bottom : Dock.Top);
+            GroupPopup.Placement = bottom ? PlacementMode.Top : PlacementMode.Bottom;
             if (IsVisible) Reposition();
+        }
+
+        /// <summary>Salva e ridisegna i tasti dopo una modifica.</summary>
+        void CommitButtons()
+        {
+            App.Current.SaveSettings();
+            ApplySettings();
         }
 
         // ------------------------------------------------------------------ mostra e nascondi
@@ -209,8 +234,6 @@ namespace WinTools.UI
             UpdateStatus();
         }
 
-        bool _noActivate;
-
         /// <summary>Toglie il «non attivabile» e porta la finestra in primo piano; con un clic nella ricerca, fuoco alla casella.</summary>
         void EnsureActive(DependencyObject source)
         {
@@ -230,6 +253,7 @@ namespace WinTools.UI
         public void HideBar()
         {
             if (!IsVisible || _hiding) return;
+            GroupPopup.IsOpen = false;
             _hiding = true;
             KeepOpen = false;
             double to = (S.Edge == "bottom" ? 1 : -1) * Math.Max(40, Panel.ActualHeight);
@@ -255,9 +279,7 @@ namespace WinTools.UI
         public void Reposition()
         {
             if (_screen == null || _hwnd == IntPtr.Zero) return;
-            var b = _screen.WorkingArea;
             var full = _screen.Bounds;
-            // Il bordo è quello dello schermo intero (la barra delle applicazioni può stare da quel lato)
             double scale = VisualTreeHelper.GetDpi(this).DpiScaleX;
             Width = full.Width / scale;
             int h = (int)Math.Round(ActualHeight * scale);
@@ -265,7 +287,7 @@ namespace WinTools.UI
             Native.SetWindowPos(_hwnd, Native.HWND_TOPMOST, full.Left, y, 0, 0, Native.SWP_NOSIZE | Native.SWP_NOACTIVATE);
         }
 
-        /// <summary>Vero se il punto (pixel dello schermo) sta sul pannello della barra, con un margine.</summary>
+        /// <summary>Vero se il punto (pixel dello schermo) sta sul pannello della barra (o sul menu di un contenitore), con un margine.</summary>
         public bool ContainsScreenPoint(int x, int y, int margin)
         {
             try
@@ -273,7 +295,14 @@ namespace WinTools.UI
                 if (!IsVisible) return false;
                 var tl = Panel.PointToScreen(new Point(0, 0));
                 var br = Panel.PointToScreen(new Point(Panel.ActualWidth, Panel.ActualHeight));
-                return x >= tl.X - margin && x <= br.X + margin && y >= tl.Y - margin && y <= br.Y + margin;
+                if (x >= tl.X - margin && x <= br.X + margin && y >= tl.Y - margin && y <= br.Y + margin) return true;
+                if (GroupPopup.IsOpen && GroupPopup.Child is FrameworkElement c)
+                {
+                    var a = c.PointToScreen(new Point(0, 0));
+                    var b = c.PointToScreen(new Point(c.ActualWidth, c.ActualHeight));
+                    return x >= a.X - margin && x <= b.X + margin && y >= a.Y - margin && y <= b.Y + margin;
+                }
+                return false;
             }
             catch { return false; }
         }
@@ -330,8 +359,10 @@ namespace WinTools.UI
         // ------------------------------------------------------------------ tasti della barra
         void BarButton_Click(object sender, RoutedEventArgs e)
         {
-            var vm = (sender as Button)?.Tag as ButtonVm;
+            var btn = sender as Button;
+            var vm = btn?.Tag as ButtonVm;
             if (vm == null || _dragging != null) return;
+            if (vm.IsGroup) { OpenGroup(vm.Button, btn); return; }
             Tools.Launch(vm.Button);
             if (!S.Pinned) HideBar();
         }
@@ -359,7 +390,7 @@ namespace WinTools.UI
             }
             finally
             {
-                Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() => { _dragging = null; KeepOpen = IsActive; }));
+                Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() => { _dragging = null; KeepOpen = IsActive || GroupPopup.IsOpen; }));
             }
         }
 
@@ -374,33 +405,43 @@ namespace WinTools.UI
         void Buttons_Drop(object sender, DragEventArgs e)
         {
             e.Handled = true;
-            int target = DropIndex(e.GetPosition(ButtonsList));
+            var targetVm = (sender as Button)?.Tag as ButtonVm;
             if (e.Data.GetDataPresent("WinTools.Button"))
             {
                 string id = e.Data.GetData("WinTools.Button") as string;
+                // Rilasciato su un contenitore: ci finisce dentro
+                if (targetVm != null && targetVm.IsGroup && targetVm.Button.Id != id)
+                {
+                    List<BarButton> owner;
+                    var moving = S.FindButton(id, out owner);
+                    if (moving == null || moving.Group) return;
+                    owner.Remove(moving);
+                    targetVm.Button.Children.Add(moving);
+                    CommitButtons();
+                    return;
+                }
+                int target = DropIndex(e.GetPosition(ButtonsList));
                 int from = S.Buttons.FindIndex(b => b.Id == id);
-                if (from < 0) return;
-                var item = S.Buttons[from];
-                S.Buttons.RemoveAt(from);
-                if (target > from) target--;
+                var item = S.DetachButton(id);
+                if (item == null) return;
+                if (from >= 0 && target > from) target--;
                 target = Math.Max(0, Math.Min(S.Buttons.Count, target));
                 S.Buttons.Insert(target, item);
-                App.Current.SaveSettings();
-                ApplySettings();
+                CommitButtons();
             }
             else if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
                 var files = e.Data.GetData(DataFormats.FileDrop) as string[];
                 if (files == null) return;
-                int at = Math.Max(0, Math.Min(S.Buttons.Count, target));
+                var list = targetVm != null && targetVm.IsGroup ? targetVm.Button.Children : S.Buttons;
+                int at = targetVm != null && targetVm.IsGroup ? list.Count : Math.Max(0, Math.Min(S.Buttons.Count, DropIndex(e.GetPosition(ButtonsList))));
                 foreach (var f in files)
                 {
                     var b = new BarButton { Label = Path.GetFileNameWithoutExtension(f), Target = f };
                     if (Directory.Exists(f)) b.Label = Path.GetFileName(f.TrimEnd('\\'));
-                    S.Buttons.Insert(at++, b);
+                    list.Insert(at++, b);
                 }
-                App.Current.SaveSettings();
-                ApplySettings();
+                CommitButtons();
             }
         }
 
@@ -420,52 +461,141 @@ namespace WinTools.UI
         protected override void OnDragOver(DragEventArgs e) { base.OnDragOver(e); Buttons_DragOver(this, e); }
         protected override void OnDrop(DragEventArgs e) { base.OnDrop(e); if (!e.Handled) Buttons_Drop(this, e); }
 
-        ButtonVm _menuTarget;
-        void BarButton_ContextMenuOpening(object sender, ContextMenuEventArgs e) { _menuTarget = (sender as Button)?.Tag as ButtonVm; KeepOpen = true; }
-        void ButtonMenu_Open(object sender, RoutedEventArgs e) { if (_menuTarget != null) Tools.Launch(_menuTarget.Button); }
-        void ButtonMenu_OpenAdmin(object sender, RoutedEventArgs e) { if (_menuTarget != null) Tools.Open(_menuTarget.Button.Target, _menuTarget.Button.Arguments, _menuTarget.Button.WorkingDir, true); }
-        void ButtonMenu_Reveal(object sender, RoutedEventArgs e)
+        // ------------------------------------------------------------------ menu contestuali dei tasti
+        void BarButton_ContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
-            if (_menuTarget == null) return;
-            string t = Environment.ExpandEnvironmentVariables(_menuTarget.Button.Target);
+            var btn = sender as Button;
+            var vm = btn?.Tag as ButtonVm;
+            if (vm == null || btn.ContextMenu == null) return;
+            KeepOpen = true;
+            var m = btn.ContextMenu;
+            m.Items.Clear();
+            var b = vm.Button;
+            if (b.Group)
+            {
+                m.Items.Add(Menu("Apri", () => OpenGroup(b, btn)));
+                m.Items.Add(new Separator());
+                m.Items.Add(Menu("Modifica…", () => EditButton(b)));
+                m.Items.Add(Menu(b.Children.Count > 0 ? "Rimuovi il contenitore (i tasti tornano sulla barra)" : "Rimuovi il contenitore", () => RemoveGroup(b)));
+            }
+            else
+            {
+                m.Items.Add(Menu("Apri", () => Tools.Launch(b)));
+                m.Items.Add(Menu("Apri come amministratore", () => Tools.Open(b.Target, b.Arguments, b.WorkingDir, true)));
+                m.Items.Add(Menu("Apri il percorso del file", () => Reveal(b)));
+                m.Items.Add(new Separator());
+                m.Items.Add(MoveToMenu(b));
+                m.Items.Add(Menu("Modifica…", () => EditButton(b)));
+                m.Items.Add(Menu("Rimuovi", () => { S.DetachButton(b.Id); CommitButtons(); }));
+            }
+            m.Items.Add(new Separator());
+            m.Items.Add(Menu("Aggiungi un tasto…", () => AddButton(false)));
+            m.Items.Add(Menu("Aggiungi un contenitore…", () => AddButton(true)));
+        }
+
+        void AddButton_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            var btn = sender as Button;
+            if (btn?.ContextMenu == null) return;
+            KeepOpen = true;
+            btn.ContextMenu.Items.Clear();
+            btn.ContextMenu.Items.Add(Menu("Aggiungi un tasto…", () => AddButton(false)));
+            btn.ContextMenu.Items.Add(Menu("Aggiungi un contenitore…", () => AddButton(true)));
+        }
+
+        /// <summary>«Sposta in»: i contenitori esistenti, oppure uno nuovo creato al volo con dentro questo tasto.</summary>
+        MenuItem MoveToMenu(BarButton b)
+        {
+            var mi = new MenuItem { Header = "Sposta in" };
+            foreach (var g in S.Buttons.Where(x => x.Group))
+            {
+                var target = g;
+                mi.Items.Add(Menu(string.IsNullOrEmpty(target.Label) ? "(contenitore)" : target.Label, () =>
+                {
+                    S.DetachButton(b.Id);
+                    target.Children.Add(b);
+                    CommitButtons();
+                }));
+            }
+            List<BarButton> owner;
+            S.FindButton(b.Id, out owner);
+            if (owner != null && owner != S.Buttons)
+            {
+                if (mi.Items.Count > 0) mi.Items.Add(new Separator());
+                mi.Items.Add(Menu("Sulla barra", () => { S.DetachButton(b.Id); S.Buttons.Add(b); CommitButtons(); }));
+            }
+            if (mi.Items.Count > 0) mi.Items.Add(new Separator());
+            mi.Items.Add(Menu("Nuovo contenitore…", () =>
+            {
+                var g = new BarButton { Group = true, Icon = "E8B7" };
+                if (RunDialog(() => new ButtonEditorWindow(g)))
+                {
+                    S.DetachButton(b.Id);
+                    g.Children.Add(b);
+                    S.Buttons.Add(g);
+                    CommitButtons();
+                }
+            }));
+            return mi;
+        }
+
+        void Reveal(BarButton b)
+        {
+            string t = Environment.ExpandEnvironmentVariables(b.Target);
             if (!Path.IsPathRooted(t)) t = IconCache.FindOnPath(t) ?? t;
             Tools.RevealInExplorer(t);
         }
-        void ButtonMenu_Edit(object sender, RoutedEventArgs e)
+
+        void EditButton(BarButton b)
         {
-            if (_menuTarget == null) return;
-            var copy = _menuTarget.Button.Clone();
+            var copy = b.Clone();
             if (RunDialog(() => new ButtonEditorWindow(copy)))
             {
-                int i = S.Buttons.FindIndex(b => b.Id == copy.Id);
-                if (i >= 0) S.Buttons[i] = copy;
-                App.Current.SaveSettings();
-                ApplySettings();
+                List<BarButton> owner;
+                var cur = S.FindButton(b.Id, out owner);
+                if (cur != null)
+                {
+                    int at = owner.IndexOf(cur);
+                    owner[at] = copy;
+                    // Un contenitore diventato tasto normale: i tasti che aveva dentro tornano sulla barra, subito dopo
+                    if (!copy.Group && copy.Children.Count > 0) { S.Buttons.InsertRange(Math.Min(S.Buttons.Count, at + 1), copy.Children); copy.Children = new List<BarButton>(); }
+                }
+                if (_openGroup != null && _openGroup.Id == copy.Id) { _openGroup = copy; if (!copy.Group) GroupPopup.IsOpen = false; }
+                CommitButtons();
             }
         }
-        void ButtonMenu_Remove(object sender, RoutedEventArgs e)
+
+        void RemoveGroup(BarButton g)
         {
-            if (_menuTarget == null) return;
-            S.Buttons.RemoveAll(b => b.Id == _menuTarget.Button.Id);
-            App.Current.SaveSettings();
-            ApplySettings();
+            int i = S.Buttons.IndexOf(g);
+            if (i < 0) return;
+            S.Buttons.RemoveAt(i);
+            S.Buttons.InsertRange(i, g.Children);
+            g.Children.Clear();
+            if (_openGroup == g) GroupPopup.IsOpen = false;
+            CommitButtons();
         }
-        void AddButton_Click(object sender, RoutedEventArgs e)
+
+        void AddButton_Click(object sender, RoutedEventArgs e) { AddButton(false); }
+
+        void AddButton(bool group)
         {
-            var b = new BarButton();
+            var b = new BarButton { Group = group, Icon = group ? "E8B7" : "" };
             if (RunDialog(() => new ButtonEditorWindow(b)))
             {
                 S.Buttons.Add(b);
-                App.Current.SaveSettings();
-                ApplySettings();
+                CommitButtons();
             }
         }
+
+        static MenuItem Menu(string text, Action a) { var mi = new MenuItem { Header = text }; mi.Click += (s, e) => a(); return mi; }
 
         /// <summary>Mostra un dialogo senza che la barra si ritiri nel frattempo.</summary>
         public bool RunDialog(Func<Window> create)
         {
             _dialogOpen = true;
             KeepOpen = true;
+            GroupPopup.IsOpen = false;
             try
             {
                 var w = create();
@@ -476,6 +606,86 @@ namespace WinTools.UI
             {
                 _dialogOpen = false;
                 if (IsBarVisible) { Activate(); SearchBox.Focus(); }
+            }
+        }
+
+        // ------------------------------------------------------------------ contenitori
+        void OpenGroup(BarButton g, UIElement anchor)
+        {
+            if (GroupPopup.IsOpen && _openGroup == g) { GroupPopup.IsOpen = false; return; }
+            _openGroup = g;
+            RefreshGroupItems();
+            GroupPopup.PlacementTarget = anchor;
+            GroupPopup.IsOpen = true;
+        }
+
+        void RefreshGroupItems()
+        {
+            _groupItems.Clear();
+            if (_openGroup == null) return;
+            List<BarButton> owner;
+            var g = S.FindButton(_openGroup.Id, out owner);
+            if (g == null) { GroupPopup.IsOpen = false; return; }
+            _openGroup = g;
+            GroupTitle.Text = g.Label;
+            foreach (var c in g.Children) _groupItems.Add(new ButtonVm(c, true));
+            GroupEmpty.Visibility = g.Children.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        void GroupPopup_Opened(object sender, EventArgs e) { KeepOpen = true; }
+        void GroupPopup_Closed(object sender, EventArgs e) { KeepOpen = IsActive && (SearchBox.IsKeyboardFocusWithin || SearchBox.Text.Length > 0); }
+
+        void GroupItem_Click(object sender, RoutedEventArgs e)
+        {
+            var vm = (sender as Button)?.Tag as ButtonVm;
+            if (vm == null || _dragging != null) return;
+            GroupPopup.IsOpen = false;
+            Tools.Launch(vm.Button);
+            if (!S.Pinned) HideBar();
+        }
+
+        void GroupItem_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
+            var btn = sender as Button;
+            var vm = btn?.Tag as ButtonVm;
+            if (vm == null || btn.ContextMenu == null) return;
+            var b = vm.Button;
+            var m = btn.ContextMenu;
+            m.Items.Clear();
+            m.Items.Add(Menu("Apri", () => { GroupPopup.IsOpen = false; Tools.Launch(b); if (!S.Pinned) HideBar(); }));
+            m.Items.Add(Menu("Apri come amministratore", () => Tools.Open(b.Target, b.Arguments, b.WorkingDir, true)));
+            m.Items.Add(new Separator());
+            m.Items.Add(MoveToMenu(b));
+            m.Items.Add(Menu("Modifica…", () => EditButton(b)));
+            m.Items.Add(Menu("Rimuovi", () => { S.DetachButton(b.Id); CommitButtons(); }));
+        }
+
+        void GroupPopup_DragOver(object sender, DragEventArgs e)
+        {
+            e.Effects = e.Data.GetDataPresent("WinTools.Button") || e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Move : DragDropEffects.None;
+            e.Handled = true;
+        }
+
+        /// <summary>Un tasto rilasciato nel menu aperto finisce in quel contenitore (in fondo).</summary>
+        void GroupPopup_Drop(object sender, DragEventArgs e)
+        {
+            e.Handled = true;
+            if (_openGroup == null) return;
+            if (e.Data.GetDataPresent("WinTools.Button"))
+            {
+                string id = e.Data.GetData("WinTools.Button") as string;
+                List<BarButton> owner;
+                var moving = S.FindButton(id, out owner);
+                if (moving == null || moving.Group) return;
+                owner.Remove(moving);
+                _openGroup.Children.Add(moving);
+                CommitButtons();
+            }
+            else if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                foreach (var f in (e.Data.GetData(DataFormats.FileDrop) as string[]) ?? new string[0])
+                    _openGroup.Children.Add(new BarButton { Label = Directory.Exists(f) ? Path.GetFileName(f.TrimEnd('\\')) : Path.GetFileNameWithoutExtension(f), Target = f });
+                CommitButtons();
             }
         }
 
@@ -501,7 +711,6 @@ namespace WinTools.UI
 
         void ShowRecents()
         {
-            var usage = S.Usage;
             var list = new List<SearchHit>();
             foreach (var p in S.Recent)
             {
@@ -510,7 +719,9 @@ namespace WinTools.UI
                 else if (File.Exists(p)) { var fi = new FileInfo(p); list.Add(new SearchHit { Kind = HitKind.File, Title = fi.Name, Path = p, Subtitle = fi.DirectoryName, Size = fi.Length, Modified = fi.LastWriteTime, IconKey = p }); }
                 if (list.Count >= 8) break;
             }
+            _showingRecents = true;
             SetResults(list, false);
+            HintText.Text = list.Count > 0 ? "Recenti · Canc rimuove · tasto destro per svuotare" : "";
             UpdateStatus();
         }
 
@@ -522,6 +733,23 @@ namespace WinTools.UI
             string s = launch.Substring("shell:AppsFolder\\".Length);
             int bang = s.IndexOf('!');
             return bang > 0 ? s.Substring(0, bang) : s;
+        }
+
+        void RemoveRecent(ResultVm vm)
+        {
+            if (vm == null) return;
+            int i = _results.IndexOf(vm);
+            S.RemoveRecent(vm.Hit.Path);
+            App.Current.SaveSettings();
+            ShowRecents();
+            if (_results.Count > 0) ResultsList.SelectedIndex = Math.Min(Math.Max(0, i), _results.Count - 1);
+        }
+
+        void ClearRecents()
+        {
+            S.ClearRecents();
+            App.Current.SaveSettings();
+            ShowRecents();
         }
 
         void RunSearch()
@@ -566,7 +794,9 @@ namespace WinTools.UI
                     list.Add(new SearchHit { Kind = HitKind.Command, Title = "Forse cercavi: " + t.Result.suggestion, Path = "suggest:" + t.Result.suggestion, Subtitle = "Cerca con le parole corrette", IconKey = "glyph:E8FD" });
                 list.Add(new SearchHit { Kind = HitKind.Command, Title = "Esegui: " + text, Path = "run:" + text, Subtitle = "Come nella finestra Esegui (Win+R)", IconKey = "glyph:E756" });
                 list.Add(new SearchHit { Kind = HitKind.Command, Title = "Cerca sul web: " + text, Path = "web:" + text, Subtitle = "Apre il browser", IconKey = "glyph:E774" });
+                _showingRecents = false;
                 SetResults(list, true);
+                HintText.Text = "↑↓ scegli · Invio apri · Ctrl+Invio apri la cartella · Esc chiudi";
                 UpdateStatus();
             }, TaskScheduler.FromCurrentSynchronizationContext());
         }
@@ -603,6 +833,9 @@ namespace WinTools.UI
                 case Key.Enter:
                     OpenSelected((Keyboard.Modifiers & ModifierKeys.Control) != 0, (Keyboard.Modifiers & ModifierKeys.Shift) != 0);
                     e.Handled = true; break;
+                case Key.Delete:
+                    if (_showingRecents && SearchBox.Text.Length == 0) { RemoveRecent(ResultsList.SelectedItem as ResultVm ?? _results.FirstOrDefault()); e.Handled = true; }
+                    break;
                 case Key.Escape:
                     if (SearchBox.Text.Length > 0) SearchBox.Text = ""; else HideBar();
                     e.Handled = true; break;
@@ -612,6 +845,7 @@ namespace WinTools.UI
         void ResultsList_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter) { OpenSelected((Keyboard.Modifiers & ModifierKeys.Control) != 0, (Keyboard.Modifiers & ModifierKeys.Shift) != 0); e.Handled = true; }
+            else if (e.Key == Key.Delete && _showingRecents) { RemoveRecent(ResultsList.SelectedItem as ResultVm); e.Handled = true; }
             else if (e.Key == Key.Escape) { HideBar(); e.Handled = true; }
         }
 
@@ -650,15 +884,18 @@ namespace WinTools.UI
             m.Items.Add(Menu("Aggiungi alla barra", () =>
             {
                 S.Buttons.Add(new BarButton { Label = item.Hit.Kind == HitKind.File ? Path.GetFileNameWithoutExtension(item.Hit.Title) : item.Hit.Title, Target = item.Hit.Path });
-                App.Current.SaveSettings();
-                ApplySettings();
+                CommitButtons();
             }));
+            if (_showingRecents)
+            {
+                m.Items.Add(new Separator());
+                m.Items.Add(Menu("Rimuovi dai recenti", () => RemoveRecent(item)));
+                m.Items.Add(Menu("Svuota i recenti", ClearRecents));
+            }
             m.Closed += (s, a) => { KeepOpen = IsActive; };
             m.IsOpen = true;
             e.Handled = true;
         }
-
-        static MenuItem Menu(string text, Action a) { var mi = new MenuItem { Header = text }; mi.Click += (s, e) => a(); return mi; }
 
         ResultVm ItemAt(DependencyObject d)
         {

@@ -12,11 +12,18 @@ using System.Windows.Threading;
 
 namespace WinTools.UI
 {
-    /// <summary>Riga dell'elenco dei tasti nelle impostazioni.</summary>
+    /// <summary>Riga dell'elenco dei tasti nelle impostazioni: un tasto della barra o uno dentro un contenitore (rientrato).</summary>
     public sealed class ButtonRow : ButtonVmBase
     {
-        public ButtonRow(BarButton b) : base(b) { }
-        public string Flags => string.Join(" · ", new[] { Button.Admin ? "amministratore" : "", Button.IconOnly ? "solo icona" : "" }.Where(s => s != ""));
+        public List<BarButton> Owner { get; }
+        public bool Nested { get; }
+        public ButtonRow(BarButton b, List<BarButton> owner, bool nested) : base(b) { Owner = owner; Nested = nested; }
+        public new string Label => (Nested ? "      ↳ " : "") + base.Label;
+        public string Flags => string.Join(" · ", new[]
+        {
+            Button.Group ? $"contenitore · {Button.Children.Count} {(Button.Children.Count == 1 ? "tasto" : "tasti")}" : "",
+            Button.Admin ? "amministratore" : "", Button.IconOnly ? "solo icona" : ""
+        }.Where(s => s != ""));
     }
 
     /// <summary>Base comune per mostrare un tasto (icona o glifo) fuori dalla barra.</summary>
@@ -28,6 +35,7 @@ namespace WinTools.UI
         {
             Button = b;
             if (ButtonVm.IsGlyph(b.Icon)) Glyph = ((char)Convert.ToInt32(b.Icon, 16)).ToString();
+            else if (b.Group && string.IsNullOrEmpty(b.Icon)) Glyph = "";
             else
             {
                 string key = string.IsNullOrEmpty(b.Icon) ? Tools.ResolveShortcut(Environment.ExpandEnvironmentVariables(b.Target)) : b.Icon;
@@ -102,7 +110,18 @@ namespace WinTools.UI
             HiddenBox.IsChecked = _work.Index.IncludeHidden;
             AppsBox.IsChecked = _work.Index.Apps;
             RescanHoursBox.Text = _work.Index.RescanHours.ToString();
+            StartupDelayBox.Text = _work.Index.StartupDelayMinutes.ToString();
+            RecentText.Text = App.Current.Settings.Recent.Count == 0 ? "Recenti: nessuno" : $"Recenti: {App.Current.Settings.Recent.Count}";
+            ClearRecentButton.IsEnabled = App.Current.Settings.Recent.Count > 0;
             RefreshRows();
+        }
+
+        void ClearRecent_Click(object sender, RoutedEventArgs e)
+        {
+            App.Current.Settings.ClearRecents();
+            App.Current.SaveSettings();
+            RecentText.Text = "Recenti: nessuno";
+            ClearRecentButton.IsEnabled = false;
         }
 
         static void Select(ComboBox box, string tag)
@@ -117,8 +136,18 @@ namespace WinTools.UI
         {
             int sel = ButtonsBox.SelectedIndex;
             _rows.Clear();
-            foreach (var b in _work.Buttons) _rows.Add(new ButtonRow(b));
+            foreach (var b in _work.Buttons)
+            {
+                _rows.Add(new ButtonRow(b, _work.Buttons, false));
+                if (b.Group) foreach (var c in b.Children) _rows.Add(new ButtonRow(c, b.Children, true));
+            }
             if (sel >= 0 && sel < _rows.Count) ButtonsBox.SelectedIndex = sel;
+        }
+
+        void SelectButton(BarButton b)
+        {
+            var row = _rows.FirstOrDefault(r => r.Button == b);
+            if (row != null) { ButtonsBox.SelectedItem = row; ButtonsBox.ScrollIntoView(row); }
         }
 
         // ------------------------------------------------------------------ navigazione
@@ -164,11 +193,21 @@ namespace WinTools.UI
         void HotkeyClear_Click(object sender, RoutedEventArgs e) { _hotkey = ""; HotkeyBox.Text = "Nessuno"; }
 
         // ------------------------------------------------------------------ tasti
-        void AddButton_Click(object sender, RoutedEventArgs e)
+        void AddButton_Click(object sender, RoutedEventArgs e) { AddNew(false); }
+        void AddGroup_Click(object sender, RoutedEventArgs e) { AddNew(true); }
+
+        void AddNew(bool group)
         {
-            var b = new BarButton();
+            var b = new BarButton { Group = group, Icon = group ? "E8B7" : "" };
             var w = new ButtonEditorWindow(b) { Owner = this };
-            if (w.ShowDialog() == true) { _work.Buttons.Add(b); RefreshRows(); ButtonsBox.SelectedIndex = _rows.Count - 1; }
+            if (w.ShowDialog() != true) return;
+            // Un tasto nuovo dentro il contenitore selezionato, se ce n'è uno; altrimenti in fondo alla barra
+            var sel = ButtonsBox.SelectedItem as ButtonRow;
+            if (!group && sel != null && sel.Button.Group) sel.Button.Children.Add(b);
+            else if (!group && sel != null && sel.Nested) sel.Owner.Add(b);
+            else _work.Buttons.Add(b);
+            RefreshRows();
+            SelectButton(b);
         }
 
         void EditButton_Click(object sender, RoutedEventArgs e)
@@ -179,9 +218,22 @@ namespace WinTools.UI
             var w = new ButtonEditorWindow(copy) { Owner = this };
             if (w.ShowDialog() == true)
             {
-                int i = _work.Buttons.IndexOf(row.Button);
-                if (i >= 0) _work.Buttons[i] = copy;
+                int i = row.Owner.IndexOf(row.Button);
+                if (i < 0) return;
+                row.Owner[i] = copy;
+                if (row.Nested && copy.Group)
+                {
+                    // Un tasto dentro un contenitore non può diventare a sua volta contenitore: sale sulla barra
+                    row.Owner.RemoveAt(i);
+                    _work.Buttons.Add(copy);
+                }
+                else if (!row.Nested && !copy.Group && copy.Children.Count > 0)
+                {
+                    _work.Buttons.InsertRange(Math.Min(_work.Buttons.Count, i + 1), copy.Children);
+                    copy.Children = new List<BarButton>();
+                }
                 RefreshRows();
+                SelectButton(copy);
             }
         }
 
@@ -189,26 +241,31 @@ namespace WinTools.UI
         {
             var row = ButtonsBox.SelectedItem as ButtonRow;
             if (row == null) return;
-            int i = _work.Buttons.IndexOf(row.Button);
-            _work.Buttons.Remove(row.Button);
+            int sel = ButtonsBox.SelectedIndex;
+            int i = row.Owner.IndexOf(row.Button);
+            row.Owner.Remove(row.Button);
+            // Via un contenitore: i suoi tasti tornano sulla barra al suo posto
+            if (row.Button.Group && row.Button.Children.Count > 0) _work.Buttons.InsertRange(Math.Min(_work.Buttons.Count, Math.Max(0, i)), row.Button.Children);
             RefreshRows();
-            if (_rows.Count > 0) ButtonsBox.SelectedIndex = Math.Min(i, _rows.Count - 1);
+            if (_rows.Count > 0) ButtonsBox.SelectedIndex = Math.Min(sel, _rows.Count - 1);
         }
 
         void UpButton_Click(object sender, RoutedEventArgs e) { Move(-1); }
         void DownButton_Click(object sender, RoutedEventArgs e) { Move(1); }
 
+        /// <summary>Sposta il tasto selezionato di un posto, dentro l'elenco in cui sta (barra o contenitore).</summary>
         void Move(int delta)
         {
             var row = ButtonsBox.SelectedItem as ButtonRow;
             if (row == null) return;
-            int i = _work.Buttons.IndexOf(row.Button);
+            var list = row.Owner;
+            int i = list.IndexOf(row.Button);
             int j = i + delta;
-            if (i < 0 || j < 0 || j >= _work.Buttons.Count) return;
-            _work.Buttons.RemoveAt(i);
-            _work.Buttons.Insert(j, row.Button);
+            if (i < 0 || j < 0 || j >= list.Count) return;
+            list.RemoveAt(i);
+            list.Insert(j, row.Button);
             RefreshRows();
-            ButtonsBox.SelectedIndex = j;
+            SelectButton(row.Button);
         }
 
         void ResetButtons_Click(object sender, RoutedEventArgs e)
@@ -337,6 +394,7 @@ namespace WinTools.UI
             s.Index.IncludeHidden = HiddenBox.IsChecked == true;
             s.Index.Apps = AppsBox.IsChecked == true;
             if (int.TryParse(RescanHoursBox.Text.Trim(), out n)) s.Index.RescanHours = Math.Max(0, Math.Min(720, n));
+            if (int.TryParse(StartupDelayBox.Text.Trim(), out n)) s.Index.StartupDelayMinutes = Math.Max(0, Math.Min(120, n));
 
             var newIndex = new JavaScriptSerializer().Serialize(s.Index);
             bool indexChanged = newIndex != oldIndex;
@@ -345,7 +403,7 @@ namespace WinTools.UI
             {
                 var a = new JavaScriptSerializer().Deserialize<IndexSettings>(oldIndex);
                 var b = new JavaScriptSerializer().Deserialize<IndexSettings>(newIndex);
-                a.RescanHours = b.RescanHours; a.Apps = b.Apps;
+                a.RescanHours = b.RescanHours; a.Apps = b.Apps; a.StartupDelayMinutes = b.StartupDelayMinutes;
                 indexChanged = new JavaScriptSerializer().Serialize(a) != new JavaScriptSerializer().Serialize(b);
             }
             App.Current.ApplySettings(indexChanged, s.Index.Apps != oldApps);

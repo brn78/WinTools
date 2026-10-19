@@ -22,10 +22,17 @@ namespace WinTools
         public bool Admin { get; set; }
         /// <summary>Mostra solo l'icona, senza etichetta.</summary>
         public bool IconOnly { get; set; }
+        /// <summary>Contenitore: non apre nulla, mostra un menu con i tasti in Children.</summary>
+        public bool Group { get; set; }
+        public List<BarButton> Children { get; set; } = new List<BarButton>();
 
         public BarButton Clone()
         {
-            return new BarButton { Id = Id, Label = Label, Target = Target, Arguments = Arguments, WorkingDir = WorkingDir, Icon = Icon, Admin = Admin, IconOnly = IconOnly };
+            return new BarButton
+            {
+                Id = Id, Label = Label, Target = Target, Arguments = Arguments, WorkingDir = WorkingDir, Icon = Icon, Admin = Admin, IconOnly = IconOnly, Group = Group,
+                Children = (Children ?? new List<BarButton>()).Select(c => c.Clone()).ToList()
+            };
         }
     }
 
@@ -42,6 +49,8 @@ namespace WinTools
         public bool Apps { get; set; } = true;
         /// <summary>Ogni quante ore rileggere tutto da capo (0 = solo all'avvio e a mano).</summary>
         public int RescanHours { get; set; } = 12;
+        /// <summary>All'avvio di Windows, quanti minuti aspettare prima di rileggere i file (il PC appena acceso ha già da fare). 0 = subito.</summary>
+        public int StartupDelayMinutes { get; set; } = 3;
 
         public static List<string> DefaultExcludes()
         {
@@ -153,12 +162,53 @@ namespace WinTools
             if (Monitor != "primary") Monitor = "cursor";
             EdgeDelayMs = Math.Max(0, Math.Min(2000, EdgeDelayMs));
             HideDelayMs = Math.Max(100, Math.Min(5000, HideDelayMs));
-            foreach (var b in Buttons)
+            NormalizeButtons(Buttons);
+            if (Index.RescanHours < 0) Index.RescanHours = 0;
+            if (Index.StartupDelayMinutes < 0) Index.StartupDelayMinutes = 0;
+        }
+
+        static void NormalizeButtons(List<BarButton> list)
+        {
+            foreach (var b in list)
             {
                 if (string.IsNullOrEmpty(b.Id)) b.Id = Guid.NewGuid().ToString("N");
                 b.Label = b.Label ?? ""; b.Target = b.Target ?? ""; b.Arguments = b.Arguments ?? ""; b.WorkingDir = b.WorkingDir ?? ""; b.Icon = b.Icon ?? "";
+                if (b.Children == null) b.Children = new List<BarButton>();
+                // Un contenitore dentro un contenitore no: i suoi tasti salgono di un livello
+                foreach (var c in b.Children.Where(c => c.Group).ToList()) { b.Children.Remove(c); b.Children.AddRange(c.Children ?? new List<BarButton>()); }
+                NormalizeButtons(b.Children);
             }
-            if (Index.RescanHours < 0) Index.RescanHours = 0;
+        }
+
+        /// <summary>Il tasto con quell'id, sulla barra o dentro un contenitore; owner = l'elenco che lo contiene.</summary>
+        public BarButton FindButton(string id, out List<BarButton> owner)
+        {
+            foreach (var b in Buttons)
+            {
+                if (b.Id == id) { owner = Buttons; return b; }
+                foreach (var c in b.Children) if (c.Id == id) { owner = b.Children; return c; }
+            }
+            owner = null;
+            return null;
+        }
+
+        /// <summary>Toglie il tasto da dove sta (barra o contenitore) e lo restituisce; null se non c'è.</summary>
+        public BarButton DetachButton(string id)
+        {
+            List<BarButton> owner;
+            var b = FindButton(id, out owner);
+            if (b != null) owner.Remove(b);
+            return b;
+        }
+
+        public void RemoveRecent(string path)
+        {
+            Recent.RemoveAll(p => string.Equals(p, path, StringComparison.OrdinalIgnoreCase));
+        }
+
+        public void ClearRecents()
+        {
+            Recent.Clear();
         }
 
         /// <summary>Segna un percorso come aperto: in cima ai recenti e un punto in più per la pertinenza.</summary>
