@@ -188,13 +188,19 @@ namespace WinTools.UI
             Deactivated += (s, e) =>
             {
                 // Il fuoco va altrove: la barra si ritira, a meno che non sia bloccata o ci sia un dialogo nostro aperto
+                FilterPopup.IsOpen = false;
                 if (_dialogOpen || S.Pinned) return;
                 Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() => { if (!IsActive && !_dialogOpen && !S.Pinned && IsBarVisible && !GroupPopup.IsOpen) HideBar(); }));
             };
             DpiChanged += (s, e) => Reposition();
             // Comparsa dal bordo senza rubare il fuoco: al primo clic sulla barra la finestra si attiva davvero,
             // altrimenti si potrebbe scrivere nella casella ma i tasti finirebbero nell'app di prima
-            PreviewMouseDown += (s, e) => EnsureActive(e.OriginalSource as DependencyObject);
+            PreviewMouseDown += (s, e) =>
+            {
+                // Un clic nella barra fuori dal pannello dei filtri lo chiude (sul suo pulsante ci pensa il Click a chiuderlo)
+                if (FilterPopup.IsOpen && !FilterButton.IsMouseOver) FilterPopup.IsOpen = false;
+                EnsureActive(e.OriginalSource as DependencyObject);
+            };
             SizeChanged += (s, e) => { if (S.Edge == "bottom") Reposition(); };
             App.Current.Index.StatusChanged += () => Dispatcher.BeginInvoke(new Action(UpdateStatus));
         }
@@ -313,8 +319,14 @@ namespace WinTools.UI
         /// <summary>Toglie il «non attivabile» e porta la finestra in primo piano; con un clic nella ricerca, fuoco alla casella.</summary>
         void EnsureActive(DependencyObject source)
         {
-            bool inSearch = false;
-            for (var d = source; d != null; d = VisualTreeHelper.GetParent(d)) { if (d == SearchHost) { inSearch = true; break; } }
+            // Il fuoco va nella casella solo se il clic è sulla casella stessa: su un pulsante (filtri, recenti, cancella)
+            // spostare il fuoco farebbe perdere al Button la cattura del mouse e il clic non arriverebbe
+            bool inSearch = false, inButton = false;
+            for (var d = source; d != null; d = VisualTreeHelper.GetParent(d))
+            {
+                if (d is System.Windows.Controls.Primitives.ButtonBase) inButton = true;
+                if (d == SearchHost) { inSearch = !inButton; break; }
+            }
             if (_noActivate || !IsActive)
             {
                 _noActivate = false;
@@ -330,6 +342,7 @@ namespace WinTools.UI
         {
             if (!IsVisible || _hiding) return;
             GroupPopup.IsOpen = false;
+            FilterPopup.IsOpen = false;
             _hiding = true;
             KeepOpen = false;
             double to = (S.Edge == "bottom" ? 1 : -1) * Math.Max(40, Panel.ActualHeight);
@@ -456,6 +469,8 @@ namespace WinTools.UI
             _filterLoading = false;
         }
 
+        /// <summary>Il pannello resta aperto (StaysOpen) e si chiude solo in modo esplicito: clic sul pulsante, clic altrove nella barra,
+        /// Esc, finestra disattivata o barra nascosta. Così il clic sul pulsante è un interruttore affidabile.</summary>
         void FilterButton_Click(object sender, RoutedEventArgs e)
         {
             if (FilterPopup.IsOpen) { FilterPopup.IsOpen = false; return; }
@@ -465,7 +480,13 @@ namespace WinTools.UI
         }
 
         void FilterPopup_Opened(object sender, EventArgs e) { KeepOpen = true; }
-        void FilterPopup_Closed(object sender, EventArgs e) { KeepOpen = IsActive && (SearchBox.IsKeyboardFocusWithin || SearchBox.Text.Length > 0); SearchBox.Focus(); }
+        void FilterPopup_Closed(object sender, EventArgs e)
+        {
+            KeepOpen = IsActive && (SearchBox.IsKeyboardFocusWithin || SearchBox.Text.Length > 0);
+            if (IsActive) SearchBox.Focus();
+        }
+
+        void FilterPanel_KeyDown(object sender, KeyEventArgs e) { if (e.Key == Key.Escape) { FilterPopup.IsOpen = false; e.Handled = true; } }
 
         void FilterExt_Changed(object sender, TextChangedEventArgs e) { if (_filterLoading) return; _filterExtTimer.Stop(); _filterExtTimer.Start(); }
 
@@ -569,7 +590,8 @@ namespace WinTools.UI
             }
             // Più indirizzi o più porte: si vede il primo con «+N», il clic apre l'elenco completo
             _ips = s.Ipv4; _coms = s.ComPorts;
-            string ips = s.Ipv4.Count == 0 ? "Nessun IPv4" : s.Ipv4.Count == 1 ? s.Ipv4[0].Item1 : $"{s.Ipv4[0].Item1} +{s.Ipv4.Count - 1}";
+            // Accanto all'indirizzo si legge se arriva dal DHCP o è statico (l'origine è in coda al nome della scheda)
+            string ips = s.Ipv4.Count == 0 ? "Nessun IPv4" : $"{s.Ipv4[0].Item1} {IpOrigin(s.Ipv4[0])}" + (s.Ipv4.Count > 1 ? $" +{s.Ipv4.Count - 1}" : "");
             if (ips != _lastIps)
             {
                 _lastIps = ips;
@@ -586,6 +608,12 @@ namespace WinTools.UI
 
         List<Tuple<string, string>> _ips = new List<Tuple<string, string>>();
         List<Tuple<string, string>> _coms = new List<Tuple<string, string>>();
+
+        static string IpOrigin(Tuple<string, string> ip)
+        {
+            int i = ip.Item2.LastIndexOf("  ·  ", StringComparison.Ordinal);
+            return i >= 0 ? ip.Item2.Substring(i + 5) : "";
+        }
 
         void InfoCpu_Click(object sender, RoutedEventArgs e) { Tools.Open("taskmgr.exe"); if (!S.Pinned) HideBar(); }
         void InfoNet_Click(object sender, RoutedEventArgs e) { Tools.Open("ms-settings:network"); if (!S.Pinned) HideBar(); }
