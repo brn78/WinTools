@@ -9,7 +9,18 @@
       <TextBlock x:Name="Heading" Text="Nuovo tasto" Style="{StaticResource TxtSubtitle}"/>
       <TextBlock Text="Un programma, un file, una cartella, un indirizzo web o un comando. Puoi anche partire da uno strumento di Windows." Style="{StaticResource TxtSecondary}" TextWrapping="Wrap" Margin="0,4,0,14"/>
 
-      <Border Style="{StaticResource Card}" Padding="16,12">
+      <Border Style="{StaticResource Card}" Padding="16,12" Margin="0,0,0,8">
+        <Grid>
+          <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+          <StackPanel>
+            <TextBlock Text="Contenitore di tasti"/>
+            <TextBlock Text="Non apre nulla: un clic mostra un menu con i tasti che ci metti dentro (trascinandoli sopra o con «Sposta in»)." Style="{StaticResource TxtCaption}" TextWrapping="Wrap" Margin="0,2,0,0"/>
+          </StackPanel>
+          <ToggleButton Grid.Column="1" x:Name="GroupBox" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center" Margin="12,0,0,0" Checked="GroupBox_Changed" Unchecked="GroupBox_Changed"/>
+        </Grid>
+      </Border>
+
+      <Border x:Name="PresetCard" Style="{StaticResource Card}" Padding="16,12">
         <StackPanel>
           <TextBlock Text="Strumento di Windows (facoltativo)" Style="{StaticResource TxtCaption}" Margin="0,0,0,4"/>
           <ComboBox x:Name="PresetBox" SelectionChanged="PresetBox_SelectionChanged"/>
@@ -17,7 +28,7 @@
       </Border>
 
       <Border Style="{StaticResource Card}" Padding="16,12" Margin="0,8,0,0">
-        <Grid>
+        <Grid x:Name="TargetGrid">
           <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
           <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
@@ -26,17 +37,17 @@
           <TextBlock Text="Etichetta" Style="{StaticResource TxtCaption}"/>
           <TextBox Grid.Row="1" x:Name="LabelBox" Margin="0,4,0,10" Grid.ColumnSpan="2" TextChanged="Any_Changed"/>
 
-          <TextBlock Grid.Row="2" Text="Che cosa apre (programma, file, cartella, indirizzo, ms-settings:, shell:…)" Style="{StaticResource TxtCaption}"/>
+          <TextBlock Grid.Row="2" x:Name="TargetLabel" Text="Che cosa apre (programma, file, cartella, indirizzo, ms-settings:, shell:…)" Style="{StaticResource TxtCaption}"/>
           <TextBox Grid.Row="3" x:Name="TargetBox" Margin="0,4,8,10" TextChanged="Any_Changed"/>
-          <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" Margin="0,4,0,10">
+          <StackPanel Grid.Row="3" Grid.Column="1" x:Name="BrowsePanel" Orientation="Horizontal" Margin="0,4,0,10">
             <Button Content="File…" Click="BrowseFile_Click" Padding="12,5"/>
             <Button Content="Cartella…" Click="BrowseFolder_Click" Padding="12,5" Margin="6,0,0,0"/>
           </StackPanel>
 
-          <TextBlock Grid.Row="4" Text="Argomenti (facoltativi)" Style="{StaticResource TxtCaption}"/>
+          <TextBlock Grid.Row="4" x:Name="ArgsLabel" Text="Argomenti (facoltativi)" Style="{StaticResource TxtCaption}"/>
           <TextBox Grid.Row="5" x:Name="ArgsBox" Margin="0,4,0,10" Grid.ColumnSpan="2"/>
 
-          <TextBlock Grid.Row="6" Text="Cartella di lavoro (facoltativa)" Style="{StaticResource TxtCaption}"/>
+          <TextBlock Grid.Row="6" x:Name="WorkDirLabel" Text="Cartella di lavoro (facoltativa)" Style="{StaticResource TxtCaption}"/>
           <TextBox Grid.Row="7" x:Name="WorkDirBox" Margin="0,4,0,2" Grid.ColumnSpan="2"/>
         </Grid>
       </Border>
@@ -68,7 +79,7 @@
             <TextBox x:Name="ImageBox" TextChanged="Any_Changed"/>
             <Button Grid.Column="1" Content="Sfoglia…" Click="BrowseImage_Click" Margin="8,0,0,0" Padding="12,5"/>
           </Grid>
-          <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+          <StackPanel x:Name="OptionsPanel" Orientation="Horizontal" Margin="0,12,0,0">
             <CheckBox x:Name="AdminBox" Content="Avvia come amministratore"/>
             <CheckBox x:Name="IconOnlyBox" Content="Solo icona, senza etichetta" Margin="24,0,0,0"/>
           </StackPanel>

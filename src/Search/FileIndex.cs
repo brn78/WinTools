@@ -200,23 +200,37 @@ namespace WinTools.Search
         void Notify() { try { StatusChanged?.Invoke(); } catch { } }
 
         // ------------------------------------------------------------------ avvio e configurazione
-        /// <summary>Carica l'indice salvato (se c'è), avvia i watcher e programma la rilettura completa.</summary>
-        public void Start(IndexSettings settings)
+        /// <summary>
+        /// Carica l'indice salvato (se c'è, in pochi decimi di secondo), avvia i watcher e programma la rilettura
+        /// completa. startupDelay = quanto aspettare prima di leggere il disco (all'avvio di Windows: il PC ha già da fare);
+        /// i watcher partono comunque subito, così le modifiche nel frattempo non si perdono.
+        /// </summary>
+        public void Start(IndexSettings settings, TimeSpan startupDelay)
         {
             _settings = settings;
             _debounce = new Timer(_ => ProcessChanges(), null, Timeout.Infinite, Timeout.Infinite);
             var t = new Thread(() =>
             {
                 bool loaded = Load();
-                Notify();
                 if (_settings.Enabled)
                 {
                     StartWatchers();
-                    // Senza indice salvato si legge subito; altrimenti dopo un po' (il PC appena acceso ha già da fare) e solo se è vecchio
                     bool stale = !loaded || (_settings.RescanHours > 0 && DateTime.Now - _status.LastScan > TimeSpan.FromHours(_settings.RescanHours));
-                    if (!loaded) Rescan();
-                    else if (stale) { Thread.Sleep(TimeSpan.FromSeconds(30)); if (!_disposed) Rescan(); }
+                    if (stale)
+                    {
+                        var wait = startupDelay > TimeSpan.Zero ? startupDelay : (loaded ? TimeSpan.FromSeconds(30) : TimeSpan.Zero);
+                        if (wait > TimeSpan.Zero)
+                        {
+                            if (startupDelay > TimeSpan.Zero) lock (_status) _status.Message = $"Rilettura dei file tra {Math.Max(1, Math.Round(wait.TotalMinutes))} min (avvio di Windows).";
+                            Notify();
+                            var until = DateTime.Now + wait;
+                            while (!_disposed && DateTime.Now < until) Thread.Sleep(500);
+                            lock (_status) _status.Message = "";
+                        }
+                        if (!_disposed) Rescan();
+                    }
                 }
+                Notify();
                 _periodic = new Timer(_ => PeriodicCheck(), null, TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(10));
             }) { IsBackground = true, Name = "WinTools.IndexStart" };
             t.Start();

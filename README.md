@@ -14,9 +14,15 @@ Non richiede installazione né dipendenze: **`WinTools.exe` è un unico file da 
 
 * **Porta il mouse sul bordo superiore dello schermo**: la barra scende; quando il mouse se ne va, si ritira. Oppure premi **Ctrl+Alt+W** (configurabile) o fai clic sull'icona nell'area di notifica.
 * **Cerca**: scrivi nella casella e i risultati compaiono mentre digiti. Frecce per scegliere, **Invio** apre, **Ctrl+Invio** apre la cartella che contiene il file, **Shift+Invio** avvia come amministratore, **Esc** chiude. In fondo ci sono sempre «Esegui» (come Win+R) e «Cerca sul web».
-* **Tasti**: clic per aprire, **trascina** per riordinare, tasto destro per modificare o rimuovere, **+** per aggiungerne uno. **Trascina un file o una cartella sulla barra** e diventa un tasto.
+* **Tasti**: clic per aprire, **trascina** per riordinare, tasto destro per modificare o rimuovere, **+** per aggiungerne uno. **Trascina un file o una cartella sulla barra** e diventa un tasto. Un **contenitore** raccoglie più tasti in un menu: trascinaci sopra i tasti che vuoi.
 * **Spillo**: blocca la barra sempre visibile. **Ingranaggio**: impostazioni.
 * **Area di notifica**: clic sinistro mostra la barra, clic destro apre il menu (blocca, impostazioni, aggiorna l'indice, avvio con Windows, aggiornamenti, esci).
+
+## 🆕 Versione 1.1.0
+* **Contenitori di tasti**: un tasto che, al clic, apre un menu con i tasti che ci metti dentro. Si crea con **+ → tasto destro → Aggiungi un contenitore**, dall'editor (interruttore *Contenitore di tasti*) o dalle impostazioni; i tasti ci finiscono **trascinandoli sopra** al contenitore (o nel suo menu aperto), con *Sposta in* dal tasto destro, oppure con *Nuovo contenitore…* che lo crea già con quel tasto dentro. Dal menu del contenitore: tasto destro per modificare, spostare sulla barra o rimuovere. Rimuovendo un contenitore i suoi tasti tornano sulla barra.
+* **Recenti**: con la casella vuota, **Canc** toglie il recente selezionato; dal tasto destro *Rimuovi dai recenti* e *Svuota i recenti*; anche da *Impostazioni → Ricerca e indice*.
+* **Avvio di Windows con indice ritardato**: l'indice salvato è disponibile subito, la rilettura completa parte dopo i minuti impostati (3 di base, *Impostazioni → Ricerca e indice*) per non appesantire l'accensione del PC.
+* **Più spazio ai tasti**: via l'icona accanto alla ricerca.
 
 ## 🆕 Versione 1.0.1
 * **Correzione**: con la barra comparsa dal bordo non si riusciva a scrivere nella ricerca (la finestra non prendeva il fuoco e i tasti finivano nell'app di prima). Ora il primo clic sulla barra la attiva e porta il cursore nella casella.
