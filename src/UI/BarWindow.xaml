@@ -111,6 +111,10 @@
               <TextBox Grid.Column="1" x:Name="SearchBox" Style="{StaticResource SearchBox}" Padding="0,0,0,0" FontSize="14.5" VerticalAlignment="Center"
                        TextChanged="SearchBox_TextChanged" PreviewKeyDown="SearchBox_PreviewKeyDown" GotKeyboardFocus="SearchBox_GotFocus" LostKeyboardFocus="SearchBox_LostFocus"/>
               <StackPanel Grid.Column="2" Orientation="Horizontal">
+                <!-- filtri: colorato quando ce n'è uno attivo -->
+                <Button x:Name="FilterButton" Style="{StaticResource IconButton}" Width="30" Height="30" Margin="0,0,0,0" Click="FilterButton_Click" ToolTip="Filtri: tipo, estensioni, data">
+                  <TextBlock x:Name="FilterGlyph" Style="{StaticResource Glyph}" Text="&#xE71C;" FontSize="13" Foreground="{DynamicResource TextSecondary}"/>
+                </Button>
                 <!-- compare solo con la casella vuota e dei recenti da mostrare -->
                 <Button x:Name="RecentsButton" Style="{StaticResource IconButton}" Width="30" Height="30" Margin="0,0,3,0" Visibility="Collapsed"
                         Click="RecentsButton_Click" ToolTip="Recenti (freccia giù)">
@@ -245,6 +249,40 @@
         </Border>
       </DockPanel>
     </Border>
+
+    <!-- ============================ FILTRI DELLA RICERCA ============================ -->
+    <Popup x:Name="FilterPopup" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade" Placement="Bottom" VerticalOffset="6"
+           Opened="FilterPopup_Opened" Closed="FilterPopup_Closed">
+      <Border Background="{DynamicResource DialogFill}" BorderBrush="{DynamicResource CardStroke}" BorderThickness="1" CornerRadius="8" Padding="16,12" Margin="8" Width="340">
+        <Border.Effect><DropShadowEffect BlurRadius="14" ShadowDepth="3" Direction="270" Opacity="0.35" Color="#000000"/></Border.Effect>
+        <StackPanel>
+          <TextBlock Text="Filtri della ricerca" Style="{StaticResource TxtBodyStrong}"/>
+          <TextBlock Text="Si applicano subito e restano finché non li azzeri." Style="{StaticResource TxtCaption}" Margin="0,2,0,10"/>
+          <TextBlock Text="Tipo" Style="{StaticResource TxtCaption}"/>
+          <StackPanel Orientation="Horizontal" Margin="0,4,0,10">
+            <RadioButton x:Name="FilterKindAll" Content="Tutto" Checked="Filter_Changed"/>
+            <RadioButton x:Name="FilterKindFolders" Content="Cartelle" Margin="16,0,0,0" Checked="Filter_Changed"/>
+            <RadioButton x:Name="FilterKindFiles" Content="File" Margin="16,0,0,0" Checked="Filter_Changed"/>
+          </StackPanel>
+          <TextBlock Text="Estensioni (es. pdf, docx, xlsx)" Style="{StaticResource TxtCaption}"/>
+          <TextBox x:Name="FilterExt" Margin="0,4,0,10" TextChanged="FilterExt_Changed"/>
+          <TextBlock Text="Modificati" Style="{StaticResource TxtCaption}"/>
+          <ComboBox x:Name="FilterSince" Margin="0,4,0,10" SelectionChanged="Filter_Changed">
+            <ComboBoxItem Content="In qualsiasi data" Tag="0"/>
+            <ComboBoxItem Content="Oggi" Tag="1"/>
+            <ComboBoxItem Content="Ultimi 7 giorni" Tag="7"/>
+            <ComboBoxItem Content="Ultimi 30 giorni" Tag="30"/>
+            <ComboBoxItem Content="Ultimi 90 giorni" Tag="90"/>
+            <ComboBoxItem Content="Ultimo anno" Tag="365"/>
+          </ComboBox>
+          <CheckBox x:Name="FilterNameOnly" Content="Tutte le parole nel nome (non nel percorso)" Checked="Filter_Changed" Unchecked="Filter_Changed"/>
+          <Grid Margin="0,14,0,0">
+            <Button Content="Azzera i filtri" Style="{StaticResource SubtleButton}" HorizontalAlignment="Left" Click="FilterClear_Click"/>
+            <Button Content="Chiudi" HorizontalAlignment="Right" MinWidth="90" Click="FilterClose_Click"/>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </Popup>
 
     <!-- ============================ FANTASMA DEL TASTO TRASCINATO ============================ -->
     <Popup x:Name="Ghost" Placement="Absolute" AllowsTransparency="True" PopupAnimation="None" IsHitTestVisible="False" Focusable="False">

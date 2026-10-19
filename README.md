@@ -23,6 +23,9 @@ In entrambi i casi l'aggiornamento automatico sostituisce l'exe sul posto.
 * **Spillo**: blocca la barra sempre visibile. **Ingranaggio**: impostazioni.
 * **Area di notifica**: clic sinistro mostra la barra, clic destro apre il menu (blocca, impostazioni, aggiorna l'indice, avvio con Windows, aggiornamenti, esci).
 
+## 🆕 Versione 1.6.0
+* **Filtri della ricerca**: il pulsante a imbuto accanto alla casella apre un pannello con **tipo** (tutto, cartelle, file), **estensioni** (pdf, docx…), **data di modifica** (oggi, 7, 30, 90 giorni, un anno) e **tutte le parole nel nome**. Si applicano mentre li cambi, restano salvati e l'imbuto si colora d'accento finché ce n'è uno attivo (il suggerimento li riassume; «Azzera i filtri» li toglie). Con filtri su tipo, estensione o data le app non compaiono.
+
 ## 🆕 Versione 1.5.2
 * Con più indirizzi IPv4 o più porte COM la riga mostra il primo e «+N»; il clic apre l'elenco completo (ogni indirizzo si copia da solo o tutti insieme; ogni porta con il nome del dispositivo).
 
