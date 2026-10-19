@@ -60,6 +60,13 @@ namespace WinTools.UI
         public Visibility GlyphVisibility => _icon == null ? Visibility.Visible : Visibility.Collapsed;
         public Visibility LabelVisibility => ShowLabels && !Button.IconOnly && !string.IsNullOrEmpty(Button.Label) ? Visibility.Visible : Visibility.Collapsed;
         public Visibility GroupBadgeVisibility => IsGroup ? Visibility.Visible : Visibility.Collapsed;
+
+        // Stato durante un trascinamento: il tasto che si muove si attenua, il contenitore sotto il mouse si evidenzia
+        double _dragOpacity = 1;
+        Brush _dropBrush = Brushes.Transparent;
+        public double DragOpacity { get => _dragOpacity; set { if (_dragOpacity != value) { _dragOpacity = value; Raise("DragOpacity"); } } }
+        public Brush DropBrush { get => _dropBrush; set { if (!ReferenceEquals(_dropBrush, value)) { _dropBrush = value; Raise("DropBrush"); } } }
+
         public event PropertyChangedEventHandler PropertyChanged;
         void Raise(string n) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(n));
     }
@@ -114,9 +121,21 @@ namespace WinTools.UI
         bool _showingRecents;
         int _searchSerial;
         Action _noticeAction;
-        Point _dragStart;
-        ButtonVm _dragging;
         BarButton _openGroup;
+
+        /// <summary>Un trascinamento in corso: da quale tasto è partito, dov'è il mouse, che cosa c'è sotto.</summary>
+        sealed class DragState
+        {
+            public ButtonVm Vm;
+            public Button Source;
+            public bool FromPopup;
+            public Point StartScreen;
+            public bool Active;
+            public ButtonVm HoverGroup;
+            public int BarIndex = -1;      // posizione di inserimento sulla barra (-1 = fuori)
+            public int GroupIndex = -1;    // posizione nel menu del contenitore aperto (-1 = fuori)
+        }
+        DragState _drag;
 
         AppSettings S => App.Current.Settings;
 
@@ -361,101 +380,263 @@ namespace WinTools.UI
         {
             var btn = sender as Button;
             var vm = btn?.Tag as ButtonVm;
-            if (vm == null || _dragging != null) return;
+            if (vm == null || (_drag != null && _drag.Active)) return;
             if (vm.IsGroup) { OpenGroup(vm.Button, btn); return; }
             Tools.Launch(vm.Button);
             if (!S.Pinned) HideBar();
         }
 
+        // ------------------------------------------------------------------ trascinamento dei tasti
+        // Fatto in casa, senza il drag&drop di Windows: il pulsante premuto tiene già il mouse catturato, quindi
+        // riceve i movimenti anche fuori dalla barra. Un «fantasma» segue il mouse, una linea mostra dove finirà il
+        // tasto, il contenitore sotto il mouse si evidenzia; al rilascio si sposta davvero. Tutto in pixel dello
+        // schermo, così funziona anche tra la barra e il menu di un contenitore (che è una finestra a parte).
+
         void BarButton_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            _dragStart = e.GetPosition(this);
-            _dragging = null;
+            var btn = sender as Button;
+            var vm = btn?.Tag as ButtonVm;
+            if (vm == null) return;
+            _drag = new DragState { Vm = vm, Source = btn, FromPopup = IsInPopup(btn), StartScreen = btn.PointToScreen(e.GetPosition(btn)) };
         }
 
         void BarButton_MouseMove(object sender, MouseEventArgs e)
         {
-            if (e.LeftButton != MouseButtonState.Pressed) { _dragging = null; return; }
-            var btn = sender as Button;
-            var vm = btn?.Tag as ButtonVm;
-            if (vm == null) return;
-            var p = e.GetPosition(this);
-            if (Math.Abs(p.X - _dragStart.X) < 8 && Math.Abs(p.Y - _dragStart.Y) < 8) return;
-            _dragging = vm;
-            KeepOpen = true;
-            try
+            var d = _drag;
+            if (d == null || !ReferenceEquals(d.Source, sender)) return;
+            if (e.LeftButton != MouseButtonState.Pressed) { if (!d.Active) _drag = null; else EndDrag(false); return; }
+            Point sp;
+            try { sp = d.Source.PointToScreen(e.GetPosition(d.Source)); } catch { return; }
+            if (!d.Active)
             {
-                var data = new DataObject("WinTools.Button", vm.Button.Id);
-                DragDrop.DoDragDrop(btn, data, DragDropEffects.Move);
+                if (Math.Abs(sp.X - d.StartScreen.X) < 8 && Math.Abs(sp.Y - d.StartScreen.Y) < 8) return;
+                BeginDrag(d);
             }
-            finally
-            {
-                Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() => { _dragging = null; KeepOpen = IsActive || GroupPopup.IsOpen; }));
-            }
+            UpdateDrag(d, sp);
         }
 
+        void BarButton_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            var d = _drag;
+            if (d == null || !ReferenceEquals(d.Source, sender)) return;
+            if (!d.Active) { _drag = null; return; }
+            e.Handled = true;   // niente clic dopo un trascinamento
+            try { UpdateDrag(d, d.Source.PointToScreen(e.GetPosition(d.Source))); } catch { }
+            EndDrag(true);
+        }
+
+        bool IsInPopup(DependencyObject el)
+        {
+            for (var c = el; c != null; c = VisualTreeHelper.GetParent(c)) if (ReferenceEquals(c, GroupPopup.Child)) return true;
+            return false;
+        }
+
+        void BeginDrag(DragState d)
+        {
+            d.Active = true;
+            KeepOpen = true;
+            if (GroupPopup.IsOpen) GroupPopup.StaysOpen = true;   // mentre si trascina il menu non deve chiudersi
+            d.Vm.DragOpacity = 0.35;
+            GhostLabel.Text = d.Vm.Label;
+            GhostImage.Source = d.Vm.Icon;
+            GhostImage.Visibility = d.Vm.ImageVisibility;
+            GhostGlyph.Text = d.Vm.Glyph;
+            GhostGlyph.Visibility = d.Vm.GlyphVisibility;
+            Ghost.IsOpen = true;
+            Mouse.OverrideCursor = Cursors.Hand;
+        }
+
+        void UpdateDrag(DragState d, Point sp)
+        {
+            // Il fantasma segue il mouse (le posizioni del Popup assoluto sono in unità indipendenti dal DPI)
+            double scale = VisualTreeHelper.GetDpi(this).DpiScaleX;
+            Ghost.HorizontalOffset = sp.X / scale + 14;
+            Ghost.VerticalOffset = sp.Y / scale + 10;
+
+            // Sopra il menu del contenitore aperto?
+            d.GroupIndex = -1;
+            if (!d.Vm.IsGroup && GroupPopup.IsOpen && GroupPopup.Child is FrameworkElement pc && Contains(pc, sp, 0))
+            {
+                d.GroupIndex = IndexIn(GroupList, sp, vertical: true);
+                ShowGroupDropLine(d.GroupIndex);
+            }
+            else GroupDropLine.Visibility = Visibility.Collapsed;
+
+            // Sopra un contenitore della barra? (non sé stesso, e un contenitore non entra in un altro)
+            ButtonVm hover = null;
+            if (d.GroupIndex < 0 && !d.Vm.IsGroup)
+            {
+                for (int i = 0; i < _buttons.Count; i++)
+                {
+                    var vm = _buttons[i];
+                    if (!vm.IsGroup || ReferenceEquals(vm, d.Vm)) continue;
+                    var el = ButtonsList.ItemContainerGenerator.ContainerFromIndex(i) as FrameworkElement;
+                    if (el != null && Contains(el, sp, 2)) { hover = vm; break; }
+                }
+            }
+            if (!ReferenceEquals(hover, d.HoverGroup))
+            {
+                if (d.HoverGroup != null) d.HoverGroup.DropBrush = Brushes.Transparent;
+                d.HoverGroup = hover;
+                if (hover != null) hover.DropBrush = (Brush)FindResource("Accent");
+            }
+
+            // Sulla barra (con un po' di margine sopra e sotto): la linea di inserimento
+            d.BarIndex = -1;
+            if (hover == null && d.GroupIndex < 0 && Contains(Panel, sp, 40 * scale))
+            {
+                d.BarIndex = IndexIn(ButtonsList, sp, vertical: false);
+                ShowDropLine(d.BarIndex);
+            }
+            else DropLine.Visibility = Visibility.Collapsed;
+        }
+
+        void EndDrag(bool commit)
+        {
+            var d = _drag;
+            _drag = null;
+            if (d == null) return;
+            Ghost.IsOpen = false;
+            DropLine.Visibility = Visibility.Collapsed;
+            GroupDropLine.Visibility = Visibility.Collapsed;
+            Mouse.OverrideCursor = null;
+            d.Vm.DragOpacity = 1;
+            if (d.HoverGroup != null) d.HoverGroup.DropBrush = Brushes.Transparent;
+            GroupPopup.StaysOpen = false;
+            KeepOpen = IsActive || GroupPopup.IsOpen;
+            if (!commit) return;
+
+            var b = d.Vm.Button;
+            if (d.GroupIndex >= 0 && _openGroup != null && !b.Group)
+            {
+                // Nel menu del contenitore aperto, nella posizione indicata
+                var list = _openGroup.Children;
+                int from = list.IndexOf(b);
+                int to = d.GroupIndex;
+                S.DetachButton(b.Id);
+                if (from >= 0 && to > from) to--;
+                list.Insert(Math.Max(0, Math.Min(list.Count, to)), b);
+                CommitButtons();
+            }
+            else if (d.HoverGroup != null && !b.Group)
+            {
+                S.DetachButton(b.Id);
+                d.HoverGroup.Button.Children.Add(b);
+                CommitButtons();
+                if (GroupPopup.IsOpen && _openGroup != null && _openGroup.Id == d.HoverGroup.Button.Id) RefreshGroupItems();
+            }
+            else if (d.BarIndex >= 0)
+            {
+                int from = S.Buttons.IndexOf(b);
+                int to = d.BarIndex;
+                if (from == to || from == to - 1) { if (from >= 0) return; }   // lasciato dov'era
+                S.DetachButton(b.Id);
+                if (from >= 0 && to > from) to--;
+                S.Buttons.Insert(Math.Max(0, Math.Min(S.Buttons.Count, to)), b);
+                CommitButtons();
+                if (d.FromPopup) RefreshGroupItems();
+            }
+            // Altrimenti: rilasciato lontano, non cambia niente
+        }
+
+        /// <summary>Il punto (pixel dello schermo) sta sull'elemento, con un margine (in pixel).</summary>
+        static bool Contains(FrameworkElement el, Point sp, double margin)
+        {
+            try
+            {
+                var a = el.PointToScreen(new Point(0, 0));
+                var b = el.PointToScreen(new Point(el.ActualWidth, el.ActualHeight));
+                return sp.X >= a.X - margin && sp.X <= b.X + margin && sp.Y >= a.Y - margin && sp.Y <= b.Y + margin;
+            }
+            catch { return false; }
+        }
+
+        /// <summary>Posizione di inserimento in un elenco: prima dell'elemento la cui metà è oltre il mouse.</summary>
+        static int IndexIn(ItemsControl list, Point sp, bool vertical)
+        {
+            int n = list.Items.Count;
+            for (int i = 0; i < n; i++)
+            {
+                var el = list.ItemContainerGenerator.ContainerFromIndex(i) as FrameworkElement;
+                if (el == null) continue;
+                try
+                {
+                    var mid = el.PointToScreen(new Point(el.ActualWidth / 2, el.ActualHeight / 2));
+                    if (vertical ? sp.Y < mid.Y : sp.X < mid.X) return i;
+                }
+                catch { }
+            }
+            return n;
+        }
+
+        void ShowDropLine(int index)
+        {
+            double x;
+            var host = (FrameworkElement)DropLine.Parent;
+            if (_buttons.Count == 0) x = 0;
+            else if (index < _buttons.Count)
+            {
+                var el = ButtonsList.ItemContainerGenerator.ContainerFromIndex(index) as FrameworkElement;
+                if (el == null) return;
+                x = el.TranslatePoint(new Point(0, 0), host).X - 2;
+            }
+            else
+            {
+                var el = ButtonsList.ItemContainerGenerator.ContainerFromIndex(_buttons.Count - 1) as FrameworkElement;
+                if (el == null) return;
+                x = el.TranslatePoint(new Point(el.ActualWidth, 0), host).X - 1;
+            }
+            DropLine.Margin = new Thickness(Math.Max(0, x), 0, 0, 0);
+            DropLine.Visibility = Visibility.Visible;
+        }
+
+        void ShowGroupDropLine(int index)
+        {
+            double y;
+            var host = (FrameworkElement)GroupDropLine.Parent;
+            int n = _groupItems.Count;
+            if (n == 0) y = 0;
+            else if (index < n)
+            {
+                var el = GroupList.ItemContainerGenerator.ContainerFromIndex(index) as FrameworkElement;
+                if (el == null) return;
+                y = el.TranslatePoint(new Point(0, 0), host).Y - 2;
+            }
+            else
+            {
+                var el = GroupList.ItemContainerGenerator.ContainerFromIndex(n - 1) as FrameworkElement;
+                if (el == null) return;
+                y = el.TranslatePoint(new Point(0, el.ActualHeight), host).Y - 1;
+            }
+            GroupDropLine.Margin = new Thickness(6, Math.Max(0, y), 6, 0);
+            GroupDropLine.Visibility = Visibility.Visible;
+        }
+
+        // ------------------------------------------------------------------ file trascinati da Esplora file (drag&drop di Windows)
         void Buttons_DragOver(object sender, DragEventArgs e)
         {
-            if (e.Data.GetDataPresent("WinTools.Button")) e.Effects = DragDropEffects.Move;
-            else if (e.Data.GetDataPresent(DataFormats.FileDrop)) e.Effects = DragDropEffects.Copy;
-            else e.Effects = DragDropEffects.None;
+            e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
             e.Handled = true;
         }
 
         void Buttons_Drop(object sender, DragEventArgs e)
         {
             e.Handled = true;
+            if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
+            var files = e.Data.GetData(DataFormats.FileDrop) as string[];
+            if (files == null) return;
             var targetVm = (sender as Button)?.Tag as ButtonVm;
-            if (e.Data.GetDataPresent("WinTools.Button"))
+            Point sp;
+            try { sp = PointToScreen(e.GetPosition(this)); } catch { sp = new Point(0, 0); }
+            var list = targetVm != null && targetVm.IsGroup ? targetVm.Button.Children : S.Buttons;
+            int at = targetVm != null && targetVm.IsGroup ? list.Count : Math.Max(0, Math.Min(S.Buttons.Count, IndexIn(ButtonsList, sp, false)));
+            foreach (var f in files)
             {
-                string id = e.Data.GetData("WinTools.Button") as string;
-                // Rilasciato su un contenitore: ci finisce dentro
-                if (targetVm != null && targetVm.IsGroup && targetVm.Button.Id != id)
-                {
-                    List<BarButton> owner;
-                    var moving = S.FindButton(id, out owner);
-                    if (moving == null || moving.Group) return;
-                    owner.Remove(moving);
-                    targetVm.Button.Children.Add(moving);
-                    CommitButtons();
-                    return;
-                }
-                int target = DropIndex(e.GetPosition(ButtonsList));
-                int from = S.Buttons.FindIndex(b => b.Id == id);
-                var item = S.DetachButton(id);
-                if (item == null) return;
-                if (from >= 0 && target > from) target--;
-                target = Math.Max(0, Math.Min(S.Buttons.Count, target));
-                S.Buttons.Insert(target, item);
-                CommitButtons();
+                var b = new BarButton { Label = Path.GetFileNameWithoutExtension(f), Target = f };
+                if (Directory.Exists(f)) b.Label = Path.GetFileName(f.TrimEnd('\\'));
+                list.Insert(at++, b);
             }
-            else if (e.Data.GetDataPresent(DataFormats.FileDrop))
-            {
-                var files = e.Data.GetData(DataFormats.FileDrop) as string[];
-                if (files == null) return;
-                var list = targetVm != null && targetVm.IsGroup ? targetVm.Button.Children : S.Buttons;
-                int at = targetVm != null && targetVm.IsGroup ? list.Count : Math.Max(0, Math.Min(S.Buttons.Count, DropIndex(e.GetPosition(ButtonsList))));
-                foreach (var f in files)
-                {
-                    var b = new BarButton { Label = Path.GetFileNameWithoutExtension(f), Target = f };
-                    if (Directory.Exists(f)) b.Label = Path.GetFileName(f.TrimEnd('\\'));
-                    list.Insert(at++, b);
-                }
-                CommitButtons();
-            }
-        }
-
-        /// <summary>In quale posizione cade un tasto rilasciato a quella X.</summary>
-        int DropIndex(Point p)
-        {
-            for (int i = 0; i < _buttons.Count; i++)
-            {
-                var el = ButtonsList.ItemContainerGenerator.ContainerFromIndex(i) as FrameworkElement;
-                if (el == null) continue;
-                var pos = el.TranslatePoint(new Point(0, 0), ButtonsList);
-                if (p.X < pos.X + el.ActualWidth / 2) return i;
-            }
-            return _buttons.Count;
+            CommitButtons();
         }
 
         protected override void OnDragOver(DragEventArgs e) { base.OnDragOver(e); Buttons_DragOver(this, e); }
@@ -638,7 +819,7 @@ namespace WinTools.UI
         void GroupItem_Click(object sender, RoutedEventArgs e)
         {
             var vm = (sender as Button)?.Tag as ButtonVm;
-            if (vm == null || _dragging != null) return;
+            if (vm == null || (_drag != null && _drag.Active)) return;
             GroupPopup.IsOpen = false;
             Tools.Launch(vm.Button);
             if (!S.Pinned) HideBar();
@@ -662,31 +843,18 @@ namespace WinTools.UI
 
         void GroupPopup_DragOver(object sender, DragEventArgs e)
         {
-            e.Effects = e.Data.GetDataPresent("WinTools.Button") || e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Move : DragDropEffects.None;
+            e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
             e.Handled = true;
         }
 
-        /// <summary>Un tasto rilasciato nel menu aperto finisce in quel contenitore (in fondo).</summary>
+        /// <summary>File da Esplora file rilasciati nel menu aperto: diventano tasti di quel contenitore.</summary>
         void GroupPopup_Drop(object sender, DragEventArgs e)
         {
             e.Handled = true;
-            if (_openGroup == null) return;
-            if (e.Data.GetDataPresent("WinTools.Button"))
-            {
-                string id = e.Data.GetData("WinTools.Button") as string;
-                List<BarButton> owner;
-                var moving = S.FindButton(id, out owner);
-                if (moving == null || moving.Group) return;
-                owner.Remove(moving);
-                _openGroup.Children.Add(moving);
-                CommitButtons();
-            }
-            else if (e.Data.GetDataPresent(DataFormats.FileDrop))
-            {
-                foreach (var f in (e.Data.GetData(DataFormats.FileDrop) as string[]) ?? new string[0])
-                    _openGroup.Children.Add(new BarButton { Label = Directory.Exists(f) ? Path.GetFileName(f.TrimEnd('\\')) : Path.GetFileNameWithoutExtension(f), Target = f });
-                CommitButtons();
-            }
+            if (_openGroup == null || !e.Data.GetDataPresent(DataFormats.FileDrop)) return;
+            foreach (var f in (e.Data.GetData(DataFormats.FileDrop) as string[]) ?? new string[0])
+                _openGroup.Children.Add(new BarButton { Label = Directory.Exists(f) ? Path.GetFileName(f.TrimEnd('\\')) : Path.GetFileNameWithoutExtension(f), Target = f });
+            CommitButtons();
         }
 
         // ------------------------------------------------------------------ ricerca

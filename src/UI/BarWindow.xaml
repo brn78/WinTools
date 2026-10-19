@@ -9,30 +9,32 @@
   <Window.Resources>
     <!-- Un tasto della barra (il menu contestuale si riempie nel codice: dipende dal tipo di tasto) -->
     <DataTemplate x:Key="BarButtonTemplate">
-      <Button Style="{StaticResource BarButtonStyle}" Tag="{Binding}" ToolTip="{Binding Tooltip}" Click="BarButton_Click"
-              PreviewMouseLeftButtonDown="BarButton_MouseDown" PreviewMouseMove="BarButton_MouseMove" ContextMenuOpening="BarButton_ContextMenuOpening"
-              AllowDrop="True" Drop="Buttons_Drop" DragOver="Buttons_DragOver">
+      <Button Style="{StaticResource BarButtonStyle}" Tag="{Binding}" ToolTip="{Binding Tooltip}" Click="BarButton_Click" Opacity="{Binding DragOpacity}"
+              PreviewMouseLeftButtonDown="BarButton_MouseDown" PreviewMouseMove="BarButton_MouseMove" PreviewMouseLeftButtonUp="BarButton_MouseUp"
+              ContextMenuOpening="BarButton_ContextMenuOpening" AllowDrop="True" Drop="Buttons_Drop" DragOver="Buttons_DragOver">
         <Button.ContextMenu><ContextMenu/></Button.ContextMenu>
-        <StackPanel Orientation="Vertical" MinWidth="40">
-          <Grid Width="26" Height="26" HorizontalAlignment="Center">
-            <Image Source="{Binding Icon}" Width="24" Height="24" Visibility="{Binding ImageVisibility}" RenderOptions.BitmapScalingMode="HighQuality"/>
-            <TextBlock Style="{StaticResource Glyph}" Text="{Binding Glyph}" FontSize="20" Visibility="{Binding GlyphVisibility}" Foreground="{DynamicResource Accent}"/>
-            <Border Visibility="{Binding GroupBadgeVisibility}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-5,-4"
-                    Background="{DynamicResource BarFill}" CornerRadius="6" Padding="2,0">
-              <TextBlock Style="{StaticResource Glyph}" Text="&#xE70D;" FontSize="8" Foreground="{DynamicResource TextSecondary}"/>
-            </Border>
-          </Grid>
-          <TextBlock Text="{Binding Label}" FontSize="11" Margin="0,3,0,0" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="96"
-                     Visibility="{Binding LabelVisibility}" Foreground="{DynamicResource TextSecondary}"/>
-        </StackPanel>
+        <Border BorderBrush="{Binding DropBrush}" BorderThickness="2" CornerRadius="6" Margin="-7,-3" Padding="5,1">
+          <StackPanel Orientation="Vertical" MinWidth="40">
+            <Grid Width="26" Height="26" HorizontalAlignment="Center">
+              <Image Source="{Binding Icon}" Width="24" Height="24" Visibility="{Binding ImageVisibility}" RenderOptions.BitmapScalingMode="HighQuality"/>
+              <TextBlock Style="{StaticResource Glyph}" Text="{Binding Glyph}" FontSize="20" Visibility="{Binding GlyphVisibility}" Foreground="{DynamicResource Accent}"/>
+              <Border Visibility="{Binding GroupBadgeVisibility}" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-5,-4"
+                      Background="{DynamicResource BarFill}" CornerRadius="6" Padding="2,0">
+                <TextBlock Style="{StaticResource Glyph}" Text="&#xE70D;" FontSize="8" Foreground="{DynamicResource TextSecondary}"/>
+              </Border>
+            </Grid>
+            <TextBlock Text="{Binding Label}" FontSize="11" Margin="0,3,0,0" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="96"
+                       Visibility="{Binding LabelVisibility}" Foreground="{DynamicResource TextSecondary}"/>
+          </StackPanel>
+        </Border>
       </Button>
     </DataTemplate>
 
     <!-- Un tasto dentro un contenitore (riga del menu a comparsa) -->
     <DataTemplate x:Key="GroupItemTemplate">
-      <Button Style="{StaticResource SubtleButton}" HorizontalContentAlignment="Left" Tag="{Binding}" ToolTip="{Binding Tooltip}" Click="GroupItem_Click"
-              PreviewMouseLeftButtonDown="BarButton_MouseDown" PreviewMouseMove="BarButton_MouseMove" ContextMenuOpening="GroupItem_ContextMenuOpening"
-              Padding="10,6" MinWidth="220" HorizontalAlignment="Stretch">
+      <Button Style="{StaticResource SubtleButton}" HorizontalContentAlignment="Left" Tag="{Binding}" ToolTip="{Binding Tooltip}" Click="GroupItem_Click" Opacity="{Binding DragOpacity}"
+              PreviewMouseLeftButtonDown="BarButton_MouseDown" PreviewMouseMove="BarButton_MouseMove" PreviewMouseLeftButtonUp="BarButton_MouseUp"
+              ContextMenuOpening="GroupItem_ContextMenuOpening" Padding="10,6" MinWidth="220" HorizontalAlignment="Stretch">
         <Button.ContextMenu><ContextMenu/></Button.ContextMenu>
         <StackPanel Orientation="Horizontal">
           <Grid Width="22" Height="22" Margin="0,0,12,0">
@@ -107,15 +109,19 @@
 
           <Border Grid.Column="1" Width="1" Height="32" Margin="12,0,6,0" Background="{DynamicResource Divider}" VerticalAlignment="Center"/>
 
-          <!-- tasti -->
-          <ScrollViewer Grid.Column="2" x:Name="ButtonsScroll" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled"
-                        PreviewMouseWheel="ButtonsScroll_MouseWheel" AllowDrop="True" Drop="Buttons_Drop" DragOver="Buttons_DragOver">
-            <ItemsControl x:Name="ButtonsList" ItemTemplate="{StaticResource BarButtonTemplate}" Height="56" HorizontalAlignment="Left">
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
-            </ItemsControl>
-          </ScrollViewer>
+          <!-- tasti (con la linea che indica dove finirà un tasto trascinato) -->
+          <Grid Grid.Column="2">
+            <ScrollViewer x:Name="ButtonsScroll" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled"
+                          PreviewMouseWheel="ButtonsScroll_MouseWheel" AllowDrop="True" Drop="Buttons_Drop" DragOver="Buttons_DragOver">
+              <ItemsControl x:Name="ButtonsList" ItemTemplate="{StaticResource BarButtonTemplate}" Height="56" HorizontalAlignment="Left">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+              </ItemsControl>
+            </ScrollViewer>
+            <Border x:Name="DropLine" Width="3" Height="44" CornerRadius="1.5" Background="{DynamicResource Accent}" HorizontalAlignment="Left" VerticalAlignment="Center"
+                    Visibility="Collapsed" IsHitTestVisible="False"/>
+          </Grid>
 
           <Button Grid.Column="3" Style="{StaticResource IconButton}" Click="AddButton_Click" ToolTip="Aggiungi un tasto (o trascina qui un file)" Margin="4,0,0,0"
                   ContextMenuOpening="AddButton_ContextMenuOpening">
@@ -180,6 +186,20 @@
       </DockPanel>
     </Border>
 
+    <!-- ============================ FANTASMA DEL TASTO TRASCINATO ============================ -->
+    <Popup x:Name="Ghost" Placement="Absolute" AllowsTransparency="True" PopupAnimation="None" IsHitTestVisible="False" Focusable="False">
+      <Border Background="{DynamicResource BarFill}" BorderBrush="{DynamicResource Accent}" BorderThickness="1" CornerRadius="8" Padding="12,6" Opacity="0.92" IsHitTestVisible="False">
+        <Border.Effect><DropShadowEffect BlurRadius="12" ShadowDepth="3" Opacity="0.4" Color="#000000"/></Border.Effect>
+        <StackPanel Orientation="Horizontal">
+          <Grid Width="24" Height="24" Margin="0,0,8,0">
+            <Image x:Name="GhostImage" Width="22" Height="22" RenderOptions.BitmapScalingMode="HighQuality"/>
+            <TextBlock x:Name="GhostGlyph" Style="{StaticResource Glyph}" FontSize="18" Foreground="{DynamicResource Accent}"/>
+          </Grid>
+          <TextBlock x:Name="GhostLabel" VerticalAlignment="Center" MaxWidth="200" TextTrimming="CharacterEllipsis"/>
+        </StackPanel>
+      </Border>
+    </Popup>
+
     <!-- ============================ MENU DI UN CONTENITORE ============================ -->
     <Popup x:Name="GroupPopup" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade" Placement="Bottom" VerticalOffset="4"
            Opened="GroupPopup_Opened" Closed="GroupPopup_Closed">
@@ -188,7 +208,11 @@
         <Border.Effect><DropShadowEffect BlurRadius="14" ShadowDepth="3" Direction="270" Opacity="0.35" Color="#000000"/></Border.Effect>
         <StackPanel>
           <TextBlock x:Name="GroupTitle" Style="{StaticResource TxtCaption}" Margin="10,4,10,6"/>
-          <ItemsControl x:Name="GroupList" ItemTemplate="{StaticResource GroupItemTemplate}"/>
+          <Grid>
+            <ItemsControl x:Name="GroupList" ItemTemplate="{StaticResource GroupItemTemplate}"/>
+            <Border x:Name="GroupDropLine" Height="3" CornerRadius="1.5" Background="{DynamicResource Accent}" VerticalAlignment="Top" Margin="6,0"
+                    Visibility="Collapsed" IsHitTestVisible="False"/>
+          </Grid>
           <TextBlock x:Name="GroupEmpty" Text="Vuoto: trascina qui un tasto della barra, oppure usa «Sposta in» dal tasto destro." Style="{StaticResource TxtCaption}"
                      TextWrapping="Wrap" MaxWidth="240" Margin="10,2,10,6" Visibility="Collapsed"/>
         </StackPanel>
