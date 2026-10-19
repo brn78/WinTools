@@ -940,15 +940,47 @@ namespace WinTools.UI
             var targetVm = (sender as Button)?.Tag as ButtonVm;
             Point sp;
             try { sp = PointToScreen(e.GetPosition(this)); } catch { sp = new Point(0, 0); }
-            var list = targetVm != null && targetVm.IsGroup ? targetVm.Button.Children : S.Buttons;
-            int at = targetVm != null && targetVm.IsGroup ? list.Count : Math.Max(0, Math.Min(S.Buttons.Count, IndexIn(ButtonsList, sp, false)));
-            foreach (var f in files)
+            bool ontoGroup = targetVm != null && targetVm.IsGroup;
+            var list = ontoGroup ? targetVm.Button.Children : S.Buttons;
+            int at = ontoGroup ? list.Count : Math.Max(0, Math.Min(S.Buttons.Count, IndexIn(ButtonsList, sp, false)));
+            var buttons = files.Select(ButtonForPath).ToList();
+            // Più file insieme sulla barra: diventano un contenitore (con Maiusc premuto, tasti separati come prima)
+            bool shift = (e.KeyStates & DragDropKeyStates.ShiftKey) != 0;
+            if (buttons.Count >= 2 && !ontoGroup && !shift)
             {
-                var b = new BarButton { Label = Path.GetFileNameWithoutExtension(f), Target = f };
-                if (Directory.Exists(f)) b.Label = Path.GetFileName(f.TrimEnd('\\'));
-                list.Insert(at++, b);
+                var g = new BarButton { Group = true, Icon = "E8B7", Label = GroupNameFor(files), Children = buttons };
+                S.Buttons.Insert(at, g);
+                CommitButtons();
+                ShowNotice("success", $"Contenitore «{g.Label}» con {buttons.Count} elementi.", "Clic destro sul tasto per modificarlo.", "Rinomina…", () =>
+                {
+                    if (RunDialog(() => new ButtonEditorWindow(g))) CommitButtons();
+                });
+                return;
             }
+            foreach (var b in buttons) list.Insert(at++, b);
             CommitButtons();
+        }
+
+        static BarButton ButtonForPath(string f)
+        {
+            return new BarButton { Label = Directory.Exists(f) ? Path.GetFileName(f.TrimEnd('\\')) : Path.GetFileNameWithoutExtension(f), Target = f };
+        }
+
+        /// <summary>Nome per un contenitore creato da più file: la cartella che li contiene tutti, altrimenti «Gruppo».</summary>
+        static string GroupNameFor(string[] files)
+        {
+            try
+            {
+                var dirs = files.Select(f => Path.GetDirectoryName(f.TrimEnd('\\')) ?? "").Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+                if (dirs.Count == 1 && dirs[0] != "")
+                {
+                    string name = Path.GetFileName(dirs[0].TrimEnd('\\'));
+                    if (name == "") name = dirs[0].TrimEnd('\\');   // radice di un disco: «C:»
+                    return name;
+                }
+            }
+            catch { }
+            return "Gruppo";
         }
 
         protected override void OnDragOver(DragEventArgs e) { base.OnDragOver(e); Buttons_DragOver(this, e); }
@@ -1191,7 +1223,7 @@ namespace WinTools.UI
             e.Handled = true;
             if (_openGroup == null || !e.Data.GetDataPresent(DataFormats.FileDrop)) return;
             foreach (var f in (e.Data.GetData(DataFormats.FileDrop) as string[]) ?? new string[0])
-                _openGroup.Children.Add(new BarButton { Label = Directory.Exists(f) ? Path.GetFileName(f.TrimEnd('\\')) : Path.GetFileNameWithoutExtension(f), Target = f });
+                _openGroup.Children.Add(ButtonForPath(f));
             CommitButtons();
         }
 

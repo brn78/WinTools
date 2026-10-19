@@ -23,6 +23,9 @@ In entrambi i casi l'aggiornamento automatico sostituisce l'exe sul posto.
 * **Spillo**: blocca la barra sempre visibile. **Ingranaggio**: impostazioni.
 * **Area di notifica**: clic sinistro mostra la barra, clic destro apre il menu (blocca, impostazioni, aggiorna l'indice, avvio con Windows, aggiornamenti, esci).
 
+## 🆕 Versione 1.7.0
+* **Più file trascinati insieme sulla barra diventano un contenitore**: il nome è quello della cartella che li contiene, l'avviso offre subito «Rinomina…». Con **Maiusc** premuto durante il rilascio si ottengono tasti separati come prima; rilasciati su un contenitore esistente o nel suo menu aperto, finiscono lì dentro.
+
 ## 🆕 Versione 1.6.2
 * **«Riavvia e aggiorna» riparte davvero**: la nuova versione veniva avviata mentre la vecchia stava ancora chiudendo, la trovava «già in esecuzione» e si chiudeva da sola. Ora la vecchia lascia il posto prima di avviarla e la nuova, se serve, aspetta che termini.
 * **La barra si ritira sempre** dopo una comparsa dal bordo col cursore nella ricerca: se non scrivi né clicchi, allontanando il mouse sparisce come con l'opzione spenta (prima, avendo il fuoco, restava finché non si cliccava altrove).
