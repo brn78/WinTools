@@ -74,6 +74,83 @@ namespace WinTools
             try { System.Windows.Clipboard.SetText(text ?? ""); } catch { }
         }
 
+        // ------------------------------------------------------------------ appunti con file (come Esplora file)
+        /// <summary>Mette il file o la cartella negli appunti come «Copia» o «Taglia» di Esplora file: si incolla ovunque.</summary>
+        public static void CopyFileToClipboard(string path, bool cut)
+        {
+            try
+            {
+                var files = new System.Collections.Specialized.StringCollection { path };
+                var data = new System.Windows.DataObject();
+                data.SetFileDropList(files);
+                // DROPEFFECT_COPY = 1, DROPEFFECT_MOVE = 2: è così che Esplora file distingue Copia da Taglia
+                data.SetData("Preferred DropEffect", new MemoryStream(BitConverter.GetBytes(cut ? 2 : 1)));
+                System.Windows.Clipboard.SetDataObject(data, true);
+            }
+            catch (Exception ex) { Program.LogError("Copia negli appunti", ex); }
+        }
+
+        /// <summary>I file negli appunti (da Esplora file o da WinTools), se ce ne sono.</summary>
+        public static List<string> ClipboardFiles()
+        {
+            try
+            {
+                if (!System.Windows.Clipboard.ContainsFileDropList()) return new List<string>();
+                return System.Windows.Clipboard.GetFileDropList().Cast<string>().Where(p => !string.IsNullOrEmpty(p)).ToList();
+            }
+            catch { return new List<string>(); }
+        }
+
+        /// <summary>
+        /// Incolla i file degli appunti nella cartella: copia, oppure sposta se erano stati «tagliati». Usa le finestre di
+        /// Windows (avanzamento e conflitti di nome). Dopo uno spostamento gli appunti si svuotano, come in Esplora file.
+        /// </summary>
+        public static void PasteInto(string folder)
+        {
+            var files = ClipboardFiles();
+            if (files.Count == 0 || !Directory.Exists(folder)) return;
+            bool move = false;
+            try
+            {
+                var eff = System.Windows.Clipboard.GetDataObject()?.GetData("Preferred DropEffect") as MemoryStream;
+                if (eff != null) { var b = new byte[4]; eff.Position = 0; eff.Read(b, 0, 4); move = (BitConverter.ToInt32(b, 0) & 2) != 0; }
+            }
+            catch { }
+            int done = 0;
+            foreach (var src in files)
+            {
+                try
+                {
+                    string name = Path.GetFileName(src.TrimEnd('\\'));
+                    string dest = Path.Combine(folder, name);
+                    if (string.Equals(Path.GetFullPath(src).TrimEnd('\\'), Path.GetFullPath(dest).TrimEnd('\\'), StringComparison.OrdinalIgnoreCase)) continue;
+                    if (Directory.Exists(src))
+                    {
+                        if (move) Microsoft.VisualBasic.FileIO.FileSystem.MoveDirectory(src, dest, Microsoft.VisualBasic.FileIO.UIOption.AllDialogs, Microsoft.VisualBasic.FileIO.UICancelOption.DoNothing);
+                        else Microsoft.VisualBasic.FileIO.FileSystem.CopyDirectory(src, dest, Microsoft.VisualBasic.FileIO.UIOption.AllDialogs, Microsoft.VisualBasic.FileIO.UICancelOption.DoNothing);
+                    }
+                    else if (File.Exists(src))
+                    {
+                        if (move) Microsoft.VisualBasic.FileIO.FileSystem.MoveFile(src, dest, Microsoft.VisualBasic.FileIO.UIOption.AllDialogs, Microsoft.VisualBasic.FileIO.UICancelOption.DoNothing);
+                        else Microsoft.VisualBasic.FileIO.FileSystem.CopyFile(src, dest, Microsoft.VisualBasic.FileIO.UIOption.AllDialogs, Microsoft.VisualBasic.FileIO.UICancelOption.DoNothing);
+                    }
+                    done++;
+                }
+                catch (Exception ex)
+                {
+                    Program.LogError("Incolla " + src, ex);
+                    System.Windows.MessageBox.Show($"Impossibile incollare:\n{src}\n\n{ex.Message}", Program.Title, System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                }
+            }
+            if (move && done > 0) { try { System.Windows.Clipboard.Clear(); } catch { } }
+        }
+
+        /// <summary>La finestra Proprietà di Windows per un file o una cartella.</summary>
+        public static void ShowProperties(string path)
+        {
+            if (!Native.ShowProperties(path)) Program.LogError("Proprietà", new Exception("ShellExecuteEx non riuscito per " + path));
+        }
+
         /// <summary>Terminale di Windows se c'è, altrimenti il prompt dei comandi.</summary>
         public static string TerminalCommand()
         {

@@ -18,9 +18,10 @@ namespace WinTools.UI
         public List<BarButton> Owner { get; }
         public bool Nested { get; }
         public ButtonRow(BarButton b, List<BarButton> owner, bool nested) : base(b) { Owner = owner; Nested = nested; }
-        public new string Label => (Nested ? "      ↳ " : "") + base.Label;
+        public new string Label => (Nested ? "      ↳ " : "") + (Button.Separator ? "────────  separatore  ────────" : base.Label);
         public string Flags => string.Join(" · ", new[]
         {
+            Button.Separator ? "separatore" : "",
             Button.Group ? $"contenitore · {Button.Children.Count} {(Button.Children.Count == 1 ? "tasto" : "tasti")}" : "",
             Button.Admin ? "amministratore" : "", Button.IconOnly ? "solo icona" : ""
         }.Where(s => s != ""));
@@ -34,7 +35,8 @@ namespace WinTools.UI
         public ButtonVmBase(BarButton b)
         {
             Button = b;
-            if (ButtonVm.IsGlyph(b.Icon)) Glyph = ((char)Convert.ToInt32(b.Icon, 16)).ToString();
+            if (b.Separator) Glyph = "";
+            else if (ButtonVm.IsGlyph(b.Icon)) Glyph = ((char)Convert.ToInt32(b.Icon, 16)).ToString();
             else if (b.Group && string.IsNullOrEmpty(b.Icon)) Glyph = "";
             else
             {
@@ -97,6 +99,7 @@ namespace WinTools.UI
             FullWidthBox.IsChecked = _work.FullWidth;
             LabelsBox.IsChecked = _work.ShowLabels;
             EdgeTriggerBox.IsChecked = _work.EdgeTrigger;
+            FocusEdgeBox.IsChecked = _work.FocusOnEdge;
             EdgeDelayBox.Text = _work.EdgeDelayMs.ToString();
             HideDelayBox.Text = _work.HideDelayMs.ToString();
             _hotkey = _work.Hotkey;
@@ -195,6 +198,18 @@ namespace WinTools.UI
         // ------------------------------------------------------------------ tasti
         void AddButton_Click(object sender, RoutedEventArgs e) { AddNew(false); }
         void AddGroup_Click(object sender, RoutedEventArgs e) { AddNew(true); }
+
+        /// <summary>Un separatore dopo la riga selezionata (nello stesso elenco), oppure in fondo alla barra.</summary>
+        void AddSeparator_Click(object sender, RoutedEventArgs e)
+        {
+            var sep = new BarButton { Separator = true };
+            var sel = ButtonsBox.SelectedItem as ButtonRow;
+            if (sel != null && sel.Button.Group) sel.Button.Children.Add(sep);
+            else if (sel != null) sel.Owner.Insert(sel.Owner.IndexOf(sel.Button) + 1, sep);
+            else _work.Buttons.Add(sep);
+            RefreshRows();
+            SelectButton(sep);
+        }
 
         void AddNew(bool group)
         {
@@ -306,6 +321,25 @@ namespace WinTools.UI
         void StopScan_Click(object sender, RoutedEventArgs e) { App.Current.Index.CancelScan(); }
         void ResetExcludes_Click(object sender, RoutedEventArgs e) { ExcludeBox.Text = string.Join(Environment.NewLine, IndexSettings.DefaultExcludes()); }
 
+        void BrowseRoot_Click(object sender, RoutedEventArgs e) { AppendFolder(RootsBox, "Scegli una cartella da indicizzare"); }
+        void BrowseExclude_Click(object sender, RoutedEventArgs e) { AppendFolder(ExcludeBox, "Scegli una cartella da saltare"); }
+
+        /// <summary>Finestra di scelta della cartella: il percorso scelto si aggiunge in fondo all'elenco (una riga per cartella).</summary>
+        void AppendFolder(TextBox box, string title)
+        {
+            using (var d = new System.Windows.Forms.FolderBrowserDialog { Description = title, ShowNewFolderButton = false })
+            {
+                if (d.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+                string path = d.SelectedPath.TrimEnd('\\');
+                if (path.Length == 2 && path[1] == ':') path += "\\";   // la radice di un'unità resta «C:\»
+                var lines = Lines(box.Text);
+                if (lines.Any(l => string.Equals(l.TrimEnd('\\'), path.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase))) return;
+                lines.Add(path);
+                box.Text = string.Join(Environment.NewLine, lines);
+                box.ScrollToEnd();
+            }
+        }
+
         // ------------------------------------------------------------------ informazioni
         void GitHub_Click(object sender, RoutedEventArgs e) { Tools.Open("https://github.com/brn78"); }
         void Repo_Click(object sender, RoutedEventArgs e) { Tools.Open(Program.RepoUrl); }
@@ -379,6 +413,7 @@ namespace WinTools.UI
             s.FullWidth = FullWidthBox.IsChecked == true;
             s.ShowLabels = LabelsBox.IsChecked == true;
             s.EdgeTrigger = EdgeTriggerBox.IsChecked == true;
+            s.FocusOnEdge = FocusEdgeBox.IsChecked == true;
             int n;
             if (int.TryParse(EdgeDelayBox.Text.Trim(), out n)) s.EdgeDelayMs = Math.Max(0, Math.Min(2000, n));
             if (int.TryParse(HideDelayBox.Text.Trim(), out n)) s.HideDelayMs = Math.Max(100, Math.Min(5000, n));

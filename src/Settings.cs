@@ -25,12 +25,14 @@ namespace WinTools
         /// <summary>Contenitore: non apre nulla, mostra un menu con i tasti in Children.</summary>
         public bool Group { get; set; }
         public List<BarButton> Children { get; set; } = new List<BarButton>();
+        /// <summary>Separatore: una linea sottile tra i tasti, senza funzione. Si trascina e si toglie come un tasto.</summary>
+        public bool Separator { get; set; }
 
         public BarButton Clone()
         {
             return new BarButton
             {
-                Id = Id, Label = Label, Target = Target, Arguments = Arguments, WorkingDir = WorkingDir, Icon = Icon, Admin = Admin, IconOnly = IconOnly, Group = Group,
+                Id = Id, Label = Label, Target = Target, Arguments = Arguments, WorkingDir = WorkingDir, Icon = Icon, Admin = Admin, IconOnly = IconOnly, Group = Group, Separator = Separator,
                 Children = (Children ?? new List<BarButton>()).Select(c => c.Clone()).ToList()
             };
         }
@@ -88,6 +90,8 @@ namespace WinTools
         /// <summary>Barra larga quanto lo schermo, altrimenti centrata e larga quanto serve.</summary>
         public bool FullWidth { get; set; }
         public bool ShowLabels { get; set; } = true;
+        /// <summary>Quando la barra compare dal bordo, il cursore va subito nella ricerca (toglie il fuoco all'app in uso).</summary>
+        public bool FocusOnEdge { get; set; } = true;
         public bool FirstRunDone { get; set; }
         public List<BarButton> Buttons { get; set; } = new List<BarButton>();
         public IndexSettings Index { get; set; } = new IndexSettings();

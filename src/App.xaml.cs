@@ -161,7 +161,8 @@ namespace WinTools
 
             if (Bar.IsBarVisible)
             {
-                if (Settings.Pinned || Bar.KeepOpen) { _awaySince = DateTime.MinValue; return; }
+                // Bloccata, impegnata (si scrive, c'è un menu) o con il fuoco della tastiera: resta; si ritira con Esc o quando il fuoco va altrove
+                if (Settings.Pinned || Bar.KeepOpen || Bar.IsActive) { _awaySince = DateTime.MinValue; return; }
                 if (Bar.ContainsScreenPoint(p.X, p.Y, 8)) { _awaySince = DateTime.MinValue; return; }
                 if (_awaySince == DateTime.MinValue) _awaySince = DateTime.Now;
                 else if ((DateTime.Now - _awaySince).TotalMilliseconds >= Settings.HideDelayMs) { _awaySince = DateTime.MinValue; Bar.HideBar(); }
@@ -180,7 +181,7 @@ namespace WinTools
                 _edgeSince = DateTime.MinValue;
                 // Non durante un trascinamento o con un tasto premuto (si sta lavorando sul bordo)
                 if (Forms.Control.MouseButtons != Forms.MouseButtons.None) return;
-                Bar.ShowBar(false, screen);
+                Bar.ShowFromEdge(screen);
             }
         }
 

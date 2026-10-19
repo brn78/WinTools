@@ -281,6 +281,51 @@ namespace WinTools
             return Imaging.CreateBitmapSourceFromHBitmap(hbm, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
         }
 
+        // ------------------------------------------------------------------ finestra Proprietà della shell
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        struct SHELLEXECUTEINFO
+        {
+            public int cbSize;
+            public uint fMask;
+            public IntPtr hwnd;
+            [MarshalAs(UnmanagedType.LPWStr)] public string lpVerb;
+            [MarshalAs(UnmanagedType.LPWStr)] public string lpFile;
+            [MarshalAs(UnmanagedType.LPWStr)] public string lpParameters;
+            [MarshalAs(UnmanagedType.LPWStr)] public string lpDirectory;
+            public int nShow;
+            public IntPtr hInstApp;
+            public IntPtr lpIDList;
+            [MarshalAs(UnmanagedType.LPWStr)] public string lpClass;
+            public IntPtr hkeyClass;
+            public uint dwHotKey;
+            public IntPtr hIcon;
+            public IntPtr hProcess;
+        }
+
+        [DllImport("shell32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        static extern bool ShellExecuteEx(ref SHELLEXECUTEINFO lpExecInfo);
+
+        const uint SEE_MASK_INVOKEIDLIST = 0x0000000C;
+        const uint SEE_MASK_FLAG_NO_UI = 0x00000400;
+
+        /// <summary>Apre la finestra Proprietà di un file o di una cartella (il verbo «properties» della shell).</summary>
+        public static bool ShowProperties(string path)
+        {
+            try
+            {
+                var info = new SHELLEXECUTEINFO
+                {
+                    cbSize = Marshal.SizeOf(typeof(SHELLEXECUTEINFO)),
+                    fMask = SEE_MASK_INVOKEIDLIST | SEE_MASK_FLAG_NO_UI,
+                    lpVerb = "properties",
+                    lpFile = path,
+                    nShow = 5
+                };
+                return ShellExecuteEx(ref info);
+            }
+            catch { return false; }
+        }
+
         // ------------------------------------------------------------------ messaggi di Windows
         public const int WM_SETTINGCHANGE = 0x001A;
         public const int WM_DISPLAYCHANGE = 0x007E;
