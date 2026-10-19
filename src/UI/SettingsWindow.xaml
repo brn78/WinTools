@@ -74,10 +74,19 @@
               <Border Style="{StaticResource SettingCard}">
                 <Grid>
                   <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                  <StackPanel><TextBlock Text="Tema" Style="{StaticResource RowLabel}"/><TextBlock Text="Segue Windows, oppure chiaro o scuro. Il colore di accento è quello del sistema." Style="{StaticResource RowDesc}"/></StackPanel>
+                  <StackPanel><TextBlock Text="Tema" Style="{StaticResource RowLabel}"/><TextBlock Text="Segue Windows, oppure chiaro o scuro." Style="{StaticResource RowDesc}"/></StackPanel>
                   <ComboBox Grid.Column="1" x:Name="ThemeBox" Width="180" VerticalAlignment="Center">
                     <ComboBoxItem Content="Come Windows" Tag="system"/><ComboBoxItem Content="Chiaro" Tag="light"/><ComboBoxItem Content="Scuro" Tag="dark"/>
                   </ComboBox>
+                </Grid>
+              </Border>
+              <Border Style="{StaticResource SettingCard}">
+                <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <StackPanel><TextBlock Text="Colore di accento" Style="{StaticResource RowLabel}"/><TextBlock x:Name="AccentDesc" Text="Quello di Windows, oppure uno a tua scelta: icone dei tasti, interruttori, bordo della ricerca, linea di inserimento." Style="{StaticResource RowDesc}"/></StackPanel>
+                  <Border Grid.Column="1" x:Name="AccentSwatch" Width="28" Height="28" CornerRadius="6" BorderBrush="{DynamicResource ControlStroke}" BorderThickness="1" VerticalAlignment="Center" Margin="12,0,10,0"/>
+                  <Button Grid.Column="2" Content="Scegli…" Click="PickAccent_Click" VerticalAlignment="Center"/>
+                  <Button Grid.Column="3" x:Name="AccentResetButton" Content="Come Windows" Style="{StaticResource SubtleButton}" Click="ResetAccent_Click" VerticalAlignment="Center" Margin="6,0,0,0"/>
                 </Grid>
               </Border>
               <Border Style="{StaticResource SettingCard}">

@@ -50,10 +50,17 @@ namespace WinTools
             return dark ? Color.FromRgb(0x60, 0xCD, 0xFF) : Color.FromRgb(0x00, 0x5F, 0xB8);
         }
 
+        /// <summary>Colore di accento scelto dall'utente («#RRGGBB»); vuoto o non valido = quello di Windows.</summary>
+        public static string AccentOverride { get; set; } = "";
+
         public static void Apply(string setting)
         {
             bool dark = setting == "dark" ? true : setting == "light" ? false : SystemDark();
             Color accent = SystemAccent(dark);
+            if (!string.IsNullOrWhiteSpace(AccentOverride))
+            {
+                try { accent = ColorFromHex(AccentOverride.Trim()); } catch { }
+            }
             string key = dark + "|" + accent;
             if (key == _lastKey) return;
             _lastKey = key;

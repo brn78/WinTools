@@ -284,6 +284,7 @@ namespace WinTools.UI
                 SearchBox.SelectAll();
             }
             else KeepOpen = Notice.Visibility == Visibility.Visible;
+            UpdateRecentsChevron();
             UpdateStatus();
         }
 
@@ -955,6 +956,7 @@ namespace WinTools.UI
             bool empty = SearchBox.Text.Length == 0;
             SearchHint.Visibility = empty ? Visibility.Visible : Visibility.Collapsed;
             ClearSearch.Visibility = empty ? Visibility.Collapsed : Visibility.Visible;
+            UpdateRecentsChevron();
             KeepOpen = true;
             _searchTimer.Stop();
             if (empty) { HideResults(); return; }
@@ -962,6 +964,22 @@ namespace WinTools.UI
         }
 
         void ClearSearch_Click(object sender, RoutedEventArgs e) { SearchBox.Text = ""; SearchBox.Focus(); }
+
+        /// <summary>Il chevron in fondo alla casella: c'è solo con la casella vuota e qualche recente; apre e chiude l'elenco.</summary>
+        void UpdateRecentsChevron()
+        {
+            bool show = SearchBox.Text.Length == 0 && S.Recent.Count > 0;
+            RecentsButton.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+            RecentsGlyph.Text = _showingRecents && _results.Count > 0 ? "" : "";
+        }
+
+        void RecentsButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_showingRecents && _results.Count > 0) HideResults();
+            else { ShowRecents(); if (_results.Count > 0) ResultsList.SelectedIndex = 0; }
+            SearchBox.Focus();
+            UpdateRecentsChevron();
+        }
 
         void ShowRecents()
         {
@@ -977,6 +995,7 @@ namespace WinTools.UI
             }
             if (pruned) App.Current.SaveSettings();
             _showingRecents = true;
+            UpdateRecentsChevron();
             SetSearchBorder(SearchBox.IsKeyboardFocusWithin ? "Accent" : "ControlStroke");
             SetResults(list, false);
             HintText.Text = list.Count > 0 ? "Recenti · Canc rimuove · tasto destro per svuotare" : "";
@@ -1026,6 +1045,7 @@ namespace WinTools.UI
             _resultsCts = new System.Threading.CancellationTokenSource();
             _results.Clear();
             Results.Visibility = Visibility.Collapsed;
+            UpdateRecentsChevron();
         }
 
         void RunSearch()

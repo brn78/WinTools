@@ -94,6 +94,8 @@ namespace WinTools.UI
             var js = new JavaScriptSerializer();
             _work = js.Deserialize<AppSettings>(js.Serialize(App.Current.Settings));
             Select(ThemeBox, _work.Theme);
+            _accent = _work.AccentColor ?? "";
+            UpdateAccentSwatch();
             Select(EdgeBox, _work.Edge);
             Select(MonitorBox, _work.Monitor);
             FullWidthBox.IsChecked = _work.FullWidth;
@@ -194,6 +196,38 @@ namespace WinTools.UI
         }
 
         void HotkeyClear_Click(object sender, RoutedEventArgs e) { _hotkey = ""; HotkeyBox.Text = "Nessuno"; }
+
+        // ------------------------------------------------------------------ colore di accento
+        string _accent = "";
+
+        void UpdateAccentSwatch()
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(_accent)) { AccentSwatch.SetResourceReference(System.Windows.Controls.Border.BackgroundProperty, "Accent"); AccentSwatch.ToolTip = "Colore di Windows"; }
+                else { AccentSwatch.Background = new System.Windows.Media.SolidColorBrush(Theme.ColorFromHex(_accent)); AccentSwatch.ToolTip = _accent; }
+            }
+            catch { _accent = ""; AccentSwatch.SetResourceReference(System.Windows.Controls.Border.BackgroundProperty, "Accent"); }
+            AccentResetButton.Visibility = string.IsNullOrWhiteSpace(_accent) ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        void PickAccent_Click(object sender, RoutedEventArgs e)
+        {
+            using (var d = new System.Windows.Forms.ColorDialog { FullOpen = true, AnyColor = true })
+            {
+                try
+                {
+                    var c = string.IsNullOrWhiteSpace(_accent) ? Theme.Accent : Theme.ColorFromHex(_accent);
+                    d.Color = System.Drawing.Color.FromArgb(c.R, c.G, c.B);
+                }
+                catch { }
+                if (d.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+                _accent = $"#{d.Color.R:X2}{d.Color.G:X2}{d.Color.B:X2}";
+                UpdateAccentSwatch();
+            }
+        }
+
+        void ResetAccent_Click(object sender, RoutedEventArgs e) { _accent = ""; UpdateAccentSwatch(); }
 
         // ------------------------------------------------------------------ tasti
         void AddButton_Click(object sender, RoutedEventArgs e) { AddNew(false); }
@@ -408,6 +442,7 @@ namespace WinTools.UI
             bool oldApps = s.Index.Apps;
 
             s.Theme = Selected(ThemeBox) ?? "system";
+            s.AccentColor = _accent ?? "";
             s.Edge = Selected(EdgeBox) ?? "top";
             s.Monitor = Selected(MonitorBox) ?? "cursor";
             s.FullWidth = FullWidthBox.IsChecked == true;
