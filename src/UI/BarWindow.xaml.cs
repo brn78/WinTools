@@ -464,30 +464,71 @@ namespace WinTools.UI
                 NetText.SetResourceReference(TextBlock.ForegroundProperty, "ErrorText");
                 NetIcon.SetResourceReference(System.Windows.Shapes.Shape.FillProperty, "ErrorText");
             }
-            string ips = string.Join(" · ", s.Ipv4.Take(3).Select(t => t.Item1)) + (s.Ipv4.Count > 3 ? $" +{s.Ipv4.Count - 3}" : "");
+            // Più indirizzi o più porte: si vede il primo con «+N», il clic apre l'elenco completo
+            _ips = s.Ipv4; _coms = s.ComPorts;
+            string ips = s.Ipv4.Count == 0 ? "Nessun IPv4" : s.Ipv4.Count == 1 ? s.Ipv4[0].Item1 : $"{s.Ipv4[0].Item1} +{s.Ipv4.Count - 1}";
             if (ips != _lastIps)
             {
                 _lastIps = ips;
-                IpText.Text = s.Ipv4.Count == 0 ? "Nessun IPv4" : ips;
-                IpButton.ToolTip = s.Ipv4.Count == 0 ? "Nessun indirizzo IPv4 attivo" : string.Join("\n", s.Ipv4.Select(t => $"{t.Item1}  ·  {t.Item2}")) + "\n\nClic: copia gli indirizzi";
+                IpText.Text = ips;
+                IpButton.ToolTip = s.Ipv4.Count == 0 ? "Nessun indirizzo IPv4 attivo" : string.Join("\n", s.Ipv4.Select(t => $"{t.Item1}  ·  {t.Item2}")) + (s.Ipv4.Count == 1 ? "\n\nClic: copia l'indirizzo" : "\n\nClic: elenco e copia");
             }
-            string com = s.ComPorts.Count == 0 ? "Nessuna COM" : string.Join(" · ", s.ComPorts.Select(t => t.Item1));
+            string com = s.ComPorts.Count == 0 ? "Nessuna COM" : s.ComPorts.Count <= 2 ? string.Join(" · ", s.ComPorts.Select(t => t.Item1)) : $"{s.ComPorts[0].Item1} +{s.ComPorts.Count - 1}";
             if (ComText.Text != com)
             {
                 ComText.Text = com;
-                ComButton.ToolTip = s.ComPorts.Count == 0 ? "Nessuna porta seriale · clic: Gestione dispositivi" : string.Join("\n", s.ComPorts.Select(t => t.Item2 == "" ? t.Item1 : $"{t.Item1}  ·  {t.Item2}")) + "\n\nClic: Gestione dispositivi";
+                ComButton.ToolTip = s.ComPorts.Count == 0 ? "Nessuna porta seriale · clic: Gestione dispositivi" : string.Join("\n", s.ComPorts.Select(t => t.Item2 == "" ? t.Item1 : $"{t.Item1}  ·  {t.Item2}")) + (s.ComPorts.Count > 2 ? "\n\nClic: elenco" : "\n\nClic: Gestione dispositivi");
             }
         }
 
+        List<Tuple<string, string>> _ips = new List<Tuple<string, string>>();
+        List<Tuple<string, string>> _coms = new List<Tuple<string, string>>();
+
         void InfoCpu_Click(object sender, RoutedEventArgs e) { Tools.Open("taskmgr.exe"); if (!S.Pinned) HideBar(); }
         void InfoNet_Click(object sender, RoutedEventArgs e) { Tools.Open("ms-settings:network"); if (!S.Pinned) HideBar(); }
-        void InfoCom_Click(object sender, RoutedEventArgs e) { Tools.Open("devmgmt.msc"); if (!S.Pinned) HideBar(); }
+
+        void InfoCom_Click(object sender, RoutedEventArgs e)
+        {
+            if (_coms.Count <= 2) { Tools.Open("devmgmt.msc"); if (!S.Pinned) HideBar(); return; }
+            var m = new ContextMenu { PlacementTarget = ComButton, Placement = PlacementMode.Bottom };
+            foreach (var p in _coms)
+            {
+                var port = p;
+                var mi = Menu(port.Item2 == "" ? port.Item1 : $"{port.Item1}  ·  {port.Item2}", "", () => Tools.CopyToClipboard(port.Item1));
+                mi.ToolTip = "Clic: copia il nome della porta";
+                m.Items.Add(mi);
+            }
+            m.Items.Add(new Separator());
+            m.Items.Add(Menu("Gestione dispositivi", "", () => { Tools.Open("devmgmt.msc"); if (!S.Pinned) HideBar(); }));
+            OpenInfoMenu(m);
+        }
+
         void InfoIp_Click(object sender, RoutedEventArgs e)
         {
-            var ips = _stats.Sample().Ipv4;
-            if (ips.Count == 0) return;
-            Tools.CopyToClipboard(string.Join(Environment.NewLine, ips.Select(t => t.Item1)));
-            ShowNotice("success", "Indirizzi copiati", string.Join(" · ", ips.Select(t => t.Item1)));
+            if (_ips.Count == 0) return;
+            if (_ips.Count == 1)
+            {
+                Tools.CopyToClipboard(_ips[0].Item1);
+                ShowNotice("success", "Indirizzo copiato", _ips[0].Item1);
+                return;
+            }
+            var m = new ContextMenu { PlacementTarget = IpButton, Placement = PlacementMode.Bottom };
+            foreach (var a in _ips)
+            {
+                var addr = a;
+                m.Items.Add(Menu($"{addr.Item1}  ·  {addr.Item2}", "", () => { Tools.CopyToClipboard(addr.Item1); ShowNotice("success", "Indirizzo copiato", addr.Item1); }));
+            }
+            m.Items.Add(new Separator());
+            m.Items.Add(Menu("Copia tutti", "", () => { Tools.CopyToClipboard(string.Join(Environment.NewLine, _ips.Select(t => t.Item1))); ShowNotice("success", "Indirizzi copiati", string.Join(" · ", _ips.Select(t => t.Item1))); }));
+            m.Items.Add(Menu("Impostazioni di rete", "", () => { Tools.Open("ms-settings:network"); if (!S.Pinned) HideBar(); }));
+            OpenInfoMenu(m);
+        }
+
+        void OpenInfoMenu(ContextMenu m)
+        {
+            KeepOpen = true;
+            m.Closed += (s, a) => { KeepOpen = IsActive; };
+            m.IsOpen = true;
         }
 
         // ------------------------------------------------------------------ pulsanti di servizio

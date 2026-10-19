@@ -23,6 +23,9 @@ In entrambi i casi l'aggiornamento automatico sostituisce l'exe sul posto.
 * **Spillo**: blocca la barra sempre visibile. **Ingranaggio**: impostazioni.
 * **Area di notifica**: clic sinistro mostra la barra, clic destro apre il menu (blocca, impostazioni, aggiorna l'indice, avvio con Windows, aggiornamenti, esci).
 
+## 🆕 Versione 1.5.2
+* Con più indirizzi IPv4 o più porte COM la riga mostra il primo e «+N»; il clic apre l'elenco completo (ogni indirizzo si copia da solo o tutti insieme; ogni porta con il nome del dispositivo).
+
 ## 🆕 Versione 1.5.1
 * Riga informazioni con larghezze fisse e cifre a larghezza uniforme: i valori cambiano senza far scorrere il testo.
 
