@@ -18,6 +18,9 @@ Non richiede installazione né dipendenze: **`WinTools.exe` è un unico file da 
 * **Spillo**: blocca la barra sempre visibile. **Ingranaggio**: impostazioni.
 * **Area di notifica**: clic sinistro mostra la barra, clic destro apre il menu (blocca, impostazioni, aggiorna l'indice, avvio con Windows, aggiornamenti, esci).
 
+## 🆕 Versione 1.1.1
+* **Trascinamento rifatto**: il tasto trascinato segue il mouse come «fantasma», una linea mostra dove finirà, il contenitore sotto il mouse si evidenzia. Funziona tra barra e menu dei contenitori in entrambe le direzioni e per riordinare dentro un contenitore. Non usa più il drag&drop di Windows (che restava a volte senza risposta); i file da Esplora file si trascinano come prima.
+
 ## 🆕 Versione 1.1.0
 * **Contenitori di tasti**: un tasto che, al clic, apre un menu con i tasti che ci metti dentro. Si crea con **+ → tasto destro → Aggiungi un contenitore**, dall'editor (interruttore *Contenitore di tasti*) o dalle impostazioni; i tasti ci finiscono **trascinandoli sopra** al contenitore (o nel suo menu aperto), con *Sposta in* dal tasto destro, oppure con *Nuovo contenitore…* che lo crea già con quel tasto dentro. Dal menu del contenitore: tasto destro per modificare, spostare sulla barra o rimuovere. Rimuovendo un contenitore i suoi tasti tornano sulla barra.
 * **Recenti**: con la casella vuota, **Canc** toglie il recente selezionato; dal tasto destro *Rimuovi dai recenti* e *Svuota i recenti*; anche da *Impostazioni → Ricerca e indice*.
