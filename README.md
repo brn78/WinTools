@@ -23,6 +23,11 @@ In entrambi i casi l'aggiornamento automatico sostituisce l'exe sul posto.
 * **Spillo**: blocca la barra sempre visibile. **Ingranaggio**: impostazioni.
 * **Area di notifica**: clic sinistro mostra la barra, clic destro apre il menu (blocca, impostazioni, aggiorna l'indice, avvio con Windows, aggiornamenti, esci).
 
+## 🆕 Versione 1.9.0
+* **Copia automatica dei file trascinati**: i file fino a 20 MB (soglia e interruttore in Generale → «File trascinati sulla barra») vengono copiati nell'archivio di WinTools e il tasto apre la copia, così l'originale può essere spostato o eliminato. Cartelle e file più grandi restano collegamenti, con l'avviso e «Conserva copie» come prima.
+* **Rimuovendo un tasto se ne elimina anche la copia** dall'archivio (nel Cestino, per sicurezza); gli originali non si toccano mai. Nel menu di un tasto che apre una copia c'è **«Aggiorna la copia dall'originale»** se l'originale esiste ancora; il suggerimento mostra da dove viene.
+* **Animazione della barra** in Generale → Aspetto: scorrimento e dissolvenza (predefinito), solo dissolvenza, solo scorrimento o nessuna.
+* Il **«+»** per aggiungere un tasto sta ora oltre il separatore, insieme ai tasti di servizio.
 ## 🆕 Versione 1.8.1
 * **Desktop remoto con utente**: mstsc.exe non accetta l'utente dagli argomenti, quindi quando il bersaglio è `mstsc.exe` (anche dallo strumento «Connessione Desktop remoto») o un file .rdp, l'editor del tasto mostra il riquadro **Desktop remoto** con computer, utente, schermo intero, tutti i monitor e sessione di console. Al salvataggio WinTools crea il file .rdp nel suo archivio, partendo dal tuo Default.rdp, e il tasto lo apre. Un tasto `mstsc.exe /v:host` fatto a mano si ritrova il computer già compilato. La password resta a Windows: la chiede alla prima connessione e può memorizzarla.
 ## 🆕 Versione 1.8.0

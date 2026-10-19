@@ -16,6 +16,8 @@ namespace WinTools
         public string Target { get; set; } = "";
         public string Arguments { get; set; } = "";
         public string WorkingDir { get; set; } = "";
+        /// <summary>Se Target è una copia nell'archivio di WinTools, il percorso del file originale (per aggiornare la copia).</summary>
+        public string Origin { get; set; } = "";
         /// <summary>Vuoto = icona del file; «E8B7» = glifo Segoe Fluent Icons; «mdi:folder» = icona Material Design; altrimenti il percorso di un .ico/.png/.exe.</summary>
         public string Icon { get; set; } = "";
         /// <summary>Colore dell'icona (simbolo o MDI) come «#RRGGBB»; vuoto = colore di accento.</summary>
@@ -34,7 +36,7 @@ namespace WinTools
         {
             return new BarButton
             {
-                Id = Id, Label = Label, Target = Target, Arguments = Arguments, WorkingDir = WorkingDir, Icon = Icon, IconColor = IconColor, Admin = Admin, IconOnly = IconOnly, Group = Group, Separator = Separator,
+                Id = Id, Label = Label, Target = Target, Arguments = Arguments, WorkingDir = WorkingDir, Origin = Origin, Icon = Icon, IconColor = IconColor, Admin = Admin, IconOnly = IconOnly, Group = Group, Separator = Separator,
                 Children = (Children ?? new List<BarButton>()).Select(c => c.Clone()).ToList()
             };
         }
@@ -135,6 +137,12 @@ namespace WinTools
         public List<BarButton> Buttons { get; set; } = new List<BarButton>();
         public IndexSettings Index { get; set; } = new IndexSettings();
         public SearchFilter Filter { get; set; } = new SearchFilter();
+        /// <summary>Animazione di comparsa e ritiro: both (scorrimento e dissolvenza), fade, slide, none.</summary>
+        public string Animation { get; set; } = "both";
+        /// <summary>File trascinati sulla barra: se piccoli, se ne conserva una copia nell'archivio e il tasto apre quella.</summary>
+        public bool AutoArchive { get; set; } = true;
+        /// <summary>Dimensione massima (MB) dei file copiati in automatico.</summary>
+        public int AutoArchiveMaxMb { get; set; } = 20;
         /// <summary>Ultime ricerche aperte (percorsi), per i suggerimenti con la casella vuota.</summary>
         public List<string> Recent { get; set; } = new List<string>();
         /// <summary>Quante volte ogni percorso è stato aperto dai risultati: i preferiti salgono.</summary>
@@ -202,6 +210,8 @@ namespace WinTools
             if (Index.Roots == null) Index.Roots = new List<string>();
             if (Index.Exclude == null) Index.Exclude = IndexSettings.DefaultExcludes();
             if (Filter == null) Filter = new SearchFilter();
+            AutoArchiveMaxMb = Math.Max(1, Math.Min(4000, AutoArchiveMaxMb));
+            if (Animation != "fade" && Animation != "slide" && Animation != "none") Animation = "both";
             if (Filter.Kind != "folders" && Filter.Kind != "files") Filter.Kind = "all";
             if (Filter.Ext == null) Filter.Ext = "";
             if (Recent == null) Recent = new List<string>();
