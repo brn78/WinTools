@@ -5,6 +5,7 @@
     1. Disegna l'icona in vettoriale con WPF e la esporta in un .ico multi-risoluzione (PNG 16-256 px).
     2. Compila il progetto con l'SDK .NET (dotnet build, Release) per .NET Framework 4.8, già incluso in
        Windows 10 e 11: ne esce un unico WinTools.exe portatile, copiato nella cartella del progetto.
+    3. Se c'è Inno Setup (6 o 7), compila anche WinTools-Setup.exe da Setup.iss (-NoSetup per saltarlo).
     Serve l'SDK .NET (https://dotnet.microsoft.com/download) con il targeting pack .NET Framework 4.8
     (lo scarica da solo da NuGet se manca).
 .EXAMPLE
@@ -13,6 +14,7 @@
 param(
     [switch]$IconOnly,
     [switch]$SkipIcon,
+    [switch]$NoSetup,
     [string]$PreviewDir
 )
 
@@ -23,6 +25,7 @@ if ([Threading.Thread]::CurrentThread.ApartmentState -ne 'STA') {
     $argList = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-STA', '-File', $PSCommandPath)
     if ($IconOnly) { $argList += '-IconOnly' }
     if ($SkipIcon) { $argList += '-SkipIcon' }
+    if ($NoSetup) { $argList += '-NoSetup' }
     if ($PreviewDir) { $argList += @('-PreviewDir', $PreviewDir) }
     & powershell.exe @argList
     exit $LASTEXITCODE
@@ -166,4 +169,21 @@ $built = Join-Path $root 'bin\Release\WinTools.exe'
 $exePath = Join-Path $root 'WinTools.exe'
 Copy-Item -LiteralPath $built -Destination $exePath -Force
 Write-Host "      $exePath ($((Get-Item $exePath).Length) byte)" -ForegroundColor Green
+
+# ---------------------------------------------------------------- setup (Inno Setup, se installato)
+if (-not $NoSetup) {
+    $iscc = @("$env:ProgramFiles\Inno Setup 7\ISCC.exe", "${env:ProgramFiles(x86)}\Inno Setup 7\ISCC.exe",
+              "$env:ProgramFiles\Inno Setup 6\ISCC.exe", "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+              "$env:LOCALAPPDATA\Programs\Inno Setup 7\ISCC.exe", "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe") |
+        Where-Object { Test-Path $_ } | Select-Object -First 1
+    if ($iscc) {
+        Write-Host '[3/3] Compilazione WinTools-Setup.exe...' -ForegroundColor Cyan
+        & $iscc /Qp "/DAppVersion=$appVer" (Join-Path $root 'Setup.iss')
+        if ($LASTEXITCODE -ne 0) { throw "Compilazione del setup fallita (codice $LASTEXITCODE)." }
+        $setupPath = Join-Path $root 'WinTools-Setup.exe'
+        Write-Host "      $setupPath ($((Get-Item $setupPath).Length) byte)" -ForegroundColor Green
+    } else {
+        Write-Host '      Inno Setup non trovato: salto il setup (solo exe portatile).' -ForegroundColor Yellow
+    }
+}
 Write-Host 'Fatto.' -ForegroundColor Green

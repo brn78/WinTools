@@ -54,6 +54,12 @@ namespace WinTools
                 Settings.FirstRunDone = true;
                 Settings.Save();
             }
+            // Dal setup: la scelta «Avvia con Windows» fatta durante l'installazione
+            foreach (var a in e.Args)
+            {
+                if (a.Equals("--set-autostart=1", StringComparison.OrdinalIgnoreCase)) { Settings.AutoStart = true; Settings.Save(); }
+                else if (a.Equals("--set-autostart=0", StringComparison.OrdinalIgnoreCase)) { Settings.AutoStart = false; Settings.Save(); }
+            }
             Theme.Apply(Settings.Theme);
             SystemEvents.UserPreferenceChanged += (s, a) => { Theme.Invalidate(); Dispatcher.BeginInvoke(new Action(() => Theme.Apply(Settings.Theme))); };
             SystemEvents.DisplaySettingsChanged += (s, a) => Dispatcher.BeginInvoke(new Action(() => Bar?.Reposition()));
