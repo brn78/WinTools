@@ -55,6 +55,30 @@
           </Grid>
         </Border>
 
+        <!-- ============================ DESKTOP REMOTO ============================ -->
+        <!-- compare quando il bersaglio è mstsc.exe o un file .rdp: mstsc non accetta l'utente dalla riga di comando,
+             quindi host, utente e opzioni finiscono in un file .rdp generato nell'archivio di WinTools -->
+        <Border x:Name="RdpCard" Style="{StaticResource Card}" Padding="16,12" Margin="0,8,0,0" Visibility="Collapsed">
+          <StackPanel>
+            <TextBlock Text="Desktop remoto" Style="{StaticResource TxtBodyStrong}"/>
+            <TextBlock Text="Con un computer indicato qui il tasto apre un file .rdp creato da WinTools (nel suo archivio) con computer, utente e opzioni: mstsc.exe non accetta l'utente dagli argomenti. La password non si salva qui: alla prima connessione Windows la chiede e può memorizzarla."
+                       Style="{StaticResource TxtCaption}" TextWrapping="Wrap" Margin="0,2,0,10"/>
+            <Grid>
+              <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="12"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+              <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+              <TextBlock Text="Computer (nome o IP, anche con :porta)" Style="{StaticResource TxtCaption}"/>
+              <TextBox Grid.Row="1" x:Name="RdpHostBox" Margin="0,4,0,0" TextChanged="Rdp_Changed"/>
+              <TextBlock Grid.Column="2" Text="Utente (facoltativo, es. DOMINIO\nome)" Style="{StaticResource TxtCaption}"/>
+              <TextBox Grid.Row="1" Grid.Column="2" x:Name="RdpUserBox" Margin="0,4,0,0"/>
+            </Grid>
+            <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+              <CheckBox x:Name="RdpFullBox" Content="Schermo intero" IsChecked="True"/>
+              <CheckBox x:Name="RdpMultiBox" Content="Tutti i monitor" Margin="20,0,0,0"/>
+              <CheckBox x:Name="RdpAdminBox" Content="Sessione di console (/admin)" Margin="20,0,0,0"/>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
         <!-- ============================ ICONA ============================ -->
         <Border Style="{StaticResource Card}" Padding="16,12" Margin="0,8,0,0">
           <StackPanel>
