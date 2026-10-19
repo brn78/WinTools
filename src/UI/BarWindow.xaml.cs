@@ -343,6 +343,7 @@ namespace WinTools.UI
                 SearchBox.Text = "";
                 _results.Clear();
                 Results.Visibility = Visibility.Collapsed;
+                SetSearchBorder("ControlStroke");
             };
             Slide.BeginAnimation(TranslateTransform.YProperty, slide);
             Panel.BeginAnimation(OpacityProperty, new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(140)));
@@ -941,6 +942,12 @@ namespace WinTools.UI
         void SearchBox_GotFocus(object sender, KeyboardFocusChangedEventArgs e)
         {
             if (!_autoFocus) KeepOpen = true;
+            if (SearchBox.Text.Length == 0) SetSearchBorder("Accent");   // con il fuoco il bordo prende il colore di accento
+        }
+
+        void SearchBox_LostFocus(object sender, KeyboardFocusChangedEventArgs e)
+        {
+            if (SearchBox.Text.Length == 0) SetSearchBorder("ControlStroke");
         }
 
         void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -970,7 +977,7 @@ namespace WinTools.UI
             }
             if (pruned) App.Current.SaveSettings();
             _showingRecents = true;
-            SetSearchBorder("ControlStroke");
+            SetSearchBorder(SearchBox.IsKeyboardFocusWithin ? "Accent" : "ControlStroke");
             SetResults(list, false);
             HintText.Text = list.Count > 0 ? "Recenti · Canc rimuove · tasto destro per svuotare" : "";
             if (list.Count == 0) HideResults();
@@ -1013,7 +1020,7 @@ namespace WinTools.UI
         /// <summary>Elenco chiuso: niente risultati né recenti (la barra torna alla sola riga dei tasti).</summary>
         void HideResults()
         {
-            SetSearchBorder("ControlStroke");
+            SetSearchBorder(SearchBox.IsKeyboardFocusWithin ? "Accent" : "ControlStroke");
             _showingRecents = false;
             _resultsCts.Cancel();
             _resultsCts = new System.Threading.CancellationTokenSource();
