@@ -654,24 +654,24 @@ namespace WinTools.UI
             var b = vm.Button;
             if (b.Group)
             {
-                m.Items.Add(Menu("Apri", () => OpenGroup(b, btn)));
+                m.Items.Add(Menu("Apri", "", () => OpenGroup(b, btn)));
                 m.Items.Add(new Separator());
-                m.Items.Add(Menu("Modifica…", () => EditButton(b)));
-                m.Items.Add(Menu(b.Children.Count > 0 ? "Rimuovi il contenitore (i tasti tornano sulla barra)" : "Rimuovi il contenitore", () => RemoveGroup(b)));
+                m.Items.Add(Menu("Modifica…", "", () => EditButton(b)));
+                m.Items.Add(Menu(b.Children.Count > 0 ? "Rimuovi il contenitore (i tasti tornano sulla barra)" : "Rimuovi il contenitore", "", () => RemoveGroup(b)));
             }
             else
             {
-                m.Items.Add(Menu("Apri", () => Tools.Launch(b)));
-                m.Items.Add(Menu("Apri come amministratore", () => Tools.Open(b.Target, b.Arguments, b.WorkingDir, true)));
-                m.Items.Add(Menu("Apri il percorso del file", () => Reveal(b)));
+                m.Items.Add(Menu("Apri", "", () => Tools.Launch(b)));
+                m.Items.Add(Menu("Apri come amministratore", "", () => Tools.Open(b.Target, b.Arguments, b.WorkingDir, true)));
+                m.Items.Add(Menu("Apri il percorso del file", "", () => Reveal(b)));
                 m.Items.Add(new Separator());
                 m.Items.Add(MoveToMenu(b));
-                m.Items.Add(Menu("Modifica…", () => EditButton(b)));
-                m.Items.Add(Menu("Rimuovi", () => { S.DetachButton(b.Id); CommitButtons(); }));
+                m.Items.Add(Menu("Modifica…", "", () => EditButton(b)));
+                m.Items.Add(Menu("Rimuovi", "", () => { S.DetachButton(b.Id); CommitButtons(); }));
             }
             m.Items.Add(new Separator());
-            m.Items.Add(Menu("Aggiungi un tasto…", () => AddButton(false)));
-            m.Items.Add(Menu("Aggiungi un contenitore…", () => AddButton(true)));
+            m.Items.Add(Menu("Aggiungi un tasto…", "", () => AddButton(false)));
+            m.Items.Add(Menu("Aggiungi un contenitore…", "", () => AddButton(true)));
         }
 
         void AddButton_ContextMenuOpening(object sender, ContextMenuEventArgs e)
@@ -680,18 +680,18 @@ namespace WinTools.UI
             if (btn?.ContextMenu == null) return;
             KeepOpen = true;
             btn.ContextMenu.Items.Clear();
-            btn.ContextMenu.Items.Add(Menu("Aggiungi un tasto…", () => AddButton(false)));
-            btn.ContextMenu.Items.Add(Menu("Aggiungi un contenitore…", () => AddButton(true)));
+            btn.ContextMenu.Items.Add(Menu("Aggiungi un tasto…", "", () => AddButton(false)));
+            btn.ContextMenu.Items.Add(Menu("Aggiungi un contenitore…", "", () => AddButton(true)));
         }
 
         /// <summary>«Sposta in»: i contenitori esistenti, oppure uno nuovo creato al volo con dentro questo tasto.</summary>
         MenuItem MoveToMenu(BarButton b)
         {
-            var mi = new MenuItem { Header = "Sposta in" };
+            var mi = new MenuItem { Header = "Sposta in", Icon = GlyphIcon("") };
             foreach (var g in S.Buttons.Where(x => x.Group))
             {
                 var target = g;
-                mi.Items.Add(Menu(string.IsNullOrEmpty(target.Label) ? "(contenitore)" : target.Label, () =>
+                mi.Items.Add(Menu(string.IsNullOrEmpty(target.Label) ? "(contenitore)" : target.Label, "", () =>
                 {
                     S.DetachButton(b.Id);
                     target.Children.Add(b);
@@ -703,10 +703,10 @@ namespace WinTools.UI
             if (owner != null && owner != S.Buttons)
             {
                 if (mi.Items.Count > 0) mi.Items.Add(new Separator());
-                mi.Items.Add(Menu("Sulla barra", () => { S.DetachButton(b.Id); S.Buttons.Add(b); CommitButtons(); }));
+                mi.Items.Add(Menu("Sulla barra", "", () => { S.DetachButton(b.Id); S.Buttons.Add(b); CommitButtons(); }));
             }
             if (mi.Items.Count > 0) mi.Items.Add(new Separator());
-            mi.Items.Add(Menu("Nuovo contenitore…", () =>
+            mi.Items.Add(Menu("Nuovo contenitore…", "", () =>
             {
                 var g = new BarButton { Group = true, Icon = "E8B7" };
                 if (RunDialog(() => new ButtonEditorWindow(g)))
@@ -769,7 +769,8 @@ namespace WinTools.UI
             }
         }
 
-        static MenuItem Menu(string text, Action a) { var mi = new MenuItem { Header = text }; mi.Click += (s, e) => a(); return mi; }
+        static MenuItem Menu(string text, string glyph, Action a) { var mi = new MenuItem { Header = text, Icon = GlyphIcon(glyph) }; mi.Click += (s, e) => a(); return mi; }
+        static TextBlock GlyphIcon(string glyph) => new TextBlock { Text = glyph, FontFamily = new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"), FontSize = 14, VerticalAlignment = VerticalAlignment.Center, Opacity = 0.85 };
 
         /// <summary>Mostra un dialogo senza che la barra si ritiri nel frattempo.</summary>
         public bool RunDialog(Func<Window> create)
@@ -833,12 +834,12 @@ namespace WinTools.UI
             var b = vm.Button;
             var m = btn.ContextMenu;
             m.Items.Clear();
-            m.Items.Add(Menu("Apri", () => { GroupPopup.IsOpen = false; Tools.Launch(b); if (!S.Pinned) HideBar(); }));
-            m.Items.Add(Menu("Apri come amministratore", () => Tools.Open(b.Target, b.Arguments, b.WorkingDir, true)));
+            m.Items.Add(Menu("Apri", "", () => { GroupPopup.IsOpen = false; Tools.Launch(b); if (!S.Pinned) HideBar(); }));
+            m.Items.Add(Menu("Apri come amministratore", "", () => Tools.Open(b.Target, b.Arguments, b.WorkingDir, true)));
             m.Items.Add(new Separator());
             m.Items.Add(MoveToMenu(b));
-            m.Items.Add(Menu("Modifica…", () => EditButton(b)));
-            m.Items.Add(Menu("Rimuovi", () => { S.DetachButton(b.Id); CommitButtons(); }));
+            m.Items.Add(Menu("Modifica…", "", () => EditButton(b)));
+            m.Items.Add(Menu("Rimuovi", "", () => { S.DetachButton(b.Id); CommitButtons(); }));
         }
 
         void GroupPopup_DragOver(object sender, DragEventArgs e)
@@ -1041,15 +1042,15 @@ namespace WinTools.UI
             ResultsList.SelectedItem = item;
             KeepOpen = true;
             var m = new ContextMenu();
-            m.Items.Add(Menu("Apri", () => OpenHit(item.Hit, false, false)));
+            m.Items.Add(Menu("Apri", "", () => OpenHit(item.Hit, false, false)));
             if (item.Hit.Kind != HitKind.App)
             {
-                m.Items.Add(Menu("Apri la cartella", () => OpenHit(item.Hit, true, false)));
-                if (item.Hit.Kind == HitKind.File && item.Hit.Path.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) m.Items.Add(Menu("Apri come amministratore", () => OpenHit(item.Hit, false, true)));
-                m.Items.Add(Menu("Copia il percorso", () => Tools.CopyToClipboard(item.Hit.Path)));
+                m.Items.Add(Menu("Apri la cartella", "", () => OpenHit(item.Hit, true, false)));
+                if (item.Hit.Kind == HitKind.File && item.Hit.Path.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) m.Items.Add(Menu("Apri come amministratore", "", () => OpenHit(item.Hit, false, true)));
+                m.Items.Add(Menu("Copia il percorso", "", () => Tools.CopyToClipboard(item.Hit.Path)));
             }
             m.Items.Add(new Separator());
-            m.Items.Add(Menu("Aggiungi alla barra", () =>
+            m.Items.Add(Menu("Aggiungi alla barra", "", () =>
             {
                 S.Buttons.Add(new BarButton { Label = item.Hit.Kind == HitKind.File ? Path.GetFileNameWithoutExtension(item.Hit.Title) : item.Hit.Title, Target = item.Hit.Path });
                 CommitButtons();
@@ -1057,8 +1058,8 @@ namespace WinTools.UI
             if (_showingRecents)
             {
                 m.Items.Add(new Separator());
-                m.Items.Add(Menu("Rimuovi dai recenti", () => RemoveRecent(item)));
-                m.Items.Add(Menu("Svuota i recenti", ClearRecents));
+                m.Items.Add(Menu("Rimuovi dai recenti", "", () => RemoveRecent(item)));
+                m.Items.Add(Menu("Svuota i recenti", "", ClearRecents));
             }
             m.Closed += (s, a) => { KeepOpen = IsActive; };
             m.IsOpen = true;
