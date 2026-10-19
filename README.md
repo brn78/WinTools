@@ -23,6 +23,11 @@ In entrambi i casi l'aggiornamento automatico sostituisce l'exe sul posto.
 * **Spillo**: blocca la barra sempre visibile. **Ingranaggio**: impostazioni.
 * **Area di notifica**: clic sinistro mostra la barra, clic destro apre il menu (blocca, impostazioni, aggiorna l'indice, avvio con Windows, aggiornamenti, esci).
 
+## 🆕 Versione 1.3.1
+* I **recenti** non compaiono più da soli quando la barra prende il fuoco: con la casella vuota li chiami con la **freccia giù**. L'elenco si apre solo scrivendo.
+* **Bordo della casella colorato**: verde quando la ricerca trova qualcosa, rosso quando non trova niente.
+* I recenti che non esistono più (file spostati o eliminati) spariscono dall'elenco da soli.
+
 ## 🆕 Versione 1.3.0
 * **Risultati come in Esplora file**: dal tasto destro **Copia**, **Taglia**, **Incolla** (nella cartella trovata o in quella del file; con le finestre di avanzamento e di conflitto di Windows) e **Proprietà**.
 * **Dimensione anche per le cartelle** nei risultati, calcolata in sottofondo mentre l'elenco è visibile («almeno …» se la cartella è enorme e il calcolo si ferma dopo qualche secondo).
@@ -45,7 +50,7 @@ In entrambi i casi l'aggiornamento automatico sostituisce l'exe sul posto.
 
 ## 🆕 Versione 1.1.0
 * **Contenitori di tasti**: un tasto che, al clic, apre un menu con i tasti che ci metti dentro. Si crea con **+ → tasto destro → Aggiungi un contenitore**, dall'editor (interruttore *Contenitore di tasti*) o dalle impostazioni; i tasti ci finiscono **trascinandoli sopra** al contenitore (o nel suo menu aperto), con *Sposta in* dal tasto destro, oppure con *Nuovo contenitore…* che lo crea già con quel tasto dentro. Dal menu del contenitore: tasto destro per modificare, spostare sulla barra o rimuovere. Rimuovendo un contenitore i suoi tasti tornano sulla barra.
-* **Recenti**: con la casella vuota, **Canc** toglie il recente selezionato; dal tasto destro *Rimuovi dai recenti* e *Svuota i recenti*; anche da *Impostazioni → Ricerca e indice*.
+* **Recenti**: con la casella vuota, **freccia giù** li mostra, **Canc** toglie il recente selezionato; dal tasto destro *Rimuovi dai recenti* e *Svuota i recenti*; anche da *Impostazioni → Ricerca e indice*.
 * **Avvio di Windows con indice ritardato**: l'indice salvato è disponibile subito, la rilettura completa parte dopo i minuti impostati (3 di base, *Impostazioni → Ricerca e indice*) per non appesantire l'accensione del PC.
 * **Più spazio ai tasti**: via l'icona accanto alla ricerca.
 

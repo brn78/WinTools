@@ -282,7 +282,6 @@ namespace WinTools.UI
                 Native.ForceForeground(_hwnd);
                 SearchBox.Focus();
                 SearchBox.SelectAll();
-                if (SearchBox.Text.Length == 0) ShowRecents();
             }
             else KeepOpen = Notice.Visibility == Visibility.Visible;
             UpdateStatus();
@@ -942,7 +941,6 @@ namespace WinTools.UI
         void SearchBox_GotFocus(object sender, KeyboardFocusChangedEventArgs e)
         {
             if (!_autoFocus) KeepOpen = true;
-            if (SearchBox.Text.Length == 0) ShowRecents();
         }
 
         void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -952,7 +950,7 @@ namespace WinTools.UI
             ClearSearch.Visibility = empty ? Visibility.Collapsed : Visibility.Visible;
             KeepOpen = true;
             _searchTimer.Stop();
-            if (empty) { ShowRecents(); return; }
+            if (empty) { HideResults(); return; }
             _searchTimer.Start();
         }
 
@@ -961,16 +959,21 @@ namespace WinTools.UI
         void ShowRecents()
         {
             var list = new List<SearchHit>();
-            foreach (var p in S.Recent)
+            bool pruned = false;
+            foreach (var p in S.Recent.ToList())
             {
                 if (p.StartsWith("shell:AppsFolder", StringComparison.OrdinalIgnoreCase)) list.Add(new SearchHit { Kind = HitKind.App, Title = AppName(p), Path = p, Subtitle = "App · recente", IconKey = p });
                 else if (Directory.Exists(p)) list.Add(new SearchHit { Kind = HitKind.Folder, Title = Path.GetFileName(p.TrimEnd('\\')), Path = p, Subtitle = Path.GetDirectoryName(p) ?? p, IconKey = p });
                 else if (File.Exists(p)) { var fi = new FileInfo(p); list.Add(new SearchHit { Kind = HitKind.File, Title = fi.Name, Path = p, Subtitle = fi.DirectoryName, Size = fi.Length, Modified = fi.LastWriteTime, IconKey = p }); }
+                else { S.RemoveRecent(p); pruned = true; }   // spostato o eliminato: via dai recenti da solo
                 if (list.Count >= 8) break;
             }
+            if (pruned) App.Current.SaveSettings();
             _showingRecents = true;
+            SetSearchBorder("ControlStroke");
             SetResults(list, false);
             HintText.Text = list.Count > 0 ? "Recenti · Canc rimuove · tasto destro per svuotare" : "";
+            if (list.Count == 0) HideResults();
             UpdateStatus();
         }
 
@@ -998,7 +1001,24 @@ namespace WinTools.UI
         {
             S.ClearRecents();
             App.Current.SaveSettings();
-            ShowRecents();
+            HideResults();
+        }
+
+        void SetSearchBorder(string brushKey)
+        {
+            SearchHost.SetResourceReference(Border.BorderBrushProperty, brushKey);
+            SearchHost.BorderThickness = new Thickness(brushKey == "ControlStroke" ? 1 : 1.5);
+        }
+
+        /// <summary>Elenco chiuso: niente risultati né recenti (la barra torna alla sola riga dei tasti).</summary>
+        void HideResults()
+        {
+            SetSearchBorder("ControlStroke");
+            _showingRecents = false;
+            _resultsCts.Cancel();
+            _resultsCts = new System.Threading.CancellationTokenSource();
+            _results.Clear();
+            Results.Visibility = Visibility.Collapsed;
         }
 
         void RunSearch()
@@ -1006,7 +1026,7 @@ namespace WinTools.UI
             string text = SearchBox.Text.Trim();
             var words = SearchText.Words(text);
             int serial = ++_searchSerial;
-            if (words.Count == 0) { ShowRecents(); return; }
+            if (words.Count == 0) { HideResults(); return; }
             var usage = new Dictionary<string, int>(S.Usage, StringComparer.OrdinalIgnoreCase);
             var index = App.Current.Index;
             var apps = App.Current.Apps;
@@ -1045,6 +1065,8 @@ namespace WinTools.UI
                 list.Add(new SearchHit { Kind = HitKind.Command, Title = "Cerca sul web: " + text, Path = "web:" + text, Subtitle = "Apre il browser", IconKey = "glyph:E774" });
                 _showingRecents = false;
                 SetResults(list, true);
+                // Il bordo della casella dice com'è andata: verde se c'è qualcosa, rosso se non c'è niente (restano solo «Esegui» e «Cerca sul web»)
+                SetSearchBorder(list.Any(h => h.Kind != HitKind.Command) ? "SuccessText" : "ErrorText");
                 HintText.Text = "↑↓ scegli · Invio apri · Ctrl+Invio apri la cartella · Esc chiudi";
                 UpdateStatus();
             }, TaskScheduler.FromCurrentSynchronizationContext());
@@ -1059,7 +1081,7 @@ namespace WinTools.UI
             _resultsCts = new System.Threading.CancellationTokenSource();
             _results.Clear();
             foreach (var h in hits) _results.Add(new ResultVm(h, _resultsCts.Token));
-            Results.Visibility = _results.Count > 0 || App.Current.Index.Status.Scanning ? Visibility.Visible : Visibility.Collapsed;
+            Results.Visibility = _results.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             if (selectFirst && _results.Count > 0) { ResultsList.SelectedIndex = 0; ResultsList.ScrollIntoView(_results[0]); }
             HintText.Visibility = _results.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         }
@@ -1071,7 +1093,7 @@ namespace WinTools.UI
             else if (st.Scanning) StatusText.Text = $"Lettura dei file in corso… {Tools.FormatCount(st.Seen)} elementi" + (string.IsNullOrEmpty(st.Current) ? "" : "  ·  " + Shorten(st.Current, 60));
             else if (st.Entries == 0) StatusText.Text = string.IsNullOrEmpty(st.Message) ? "L'indice è vuoto." : st.Message;
             else StatusText.Text = $"{Tools.FormatCount(st.Entries)} file e cartelle" + (st.LastScan.Year > 2000 ? $"  ·  aggiornato {Tools.FormatDate(st.LastScan)}" : "") + (App.Current.Apps.Count > 0 ? $"  ·  {App.Current.Apps.Count} app" : "") + (string.IsNullOrEmpty(st.Message) ? "" : "  ·  " + st.Message);
-            if (SearchBox.IsKeyboardFocusWithin && Results.Visibility != Visibility.Visible && (st.Scanning || SearchBox.Text.Length > 0)) Results.Visibility = Visibility.Visible;
+            if (SearchBox.IsKeyboardFocusWithin && Results.Visibility != Visibility.Visible && SearchBox.Text.Length > 0) Results.Visibility = Visibility.Visible;
         }
 
         static string Shorten(string s, int max) => s.Length <= max ? s : "…" + s.Substring(s.Length - max + 1);
@@ -1080,7 +1102,11 @@ namespace WinTools.UI
         {
             switch (e.Key)
             {
-                case Key.Down: MoveSelection(1); e.Handled = true; break;
+                case Key.Down:
+                    // Casella vuota: la freccia giù mostra i recenti (non compaiono da soli all'apertura)
+                    if (SearchBox.Text.Length == 0 && _results.Count == 0) { ShowRecents(); if (_results.Count > 0) ResultsList.SelectedIndex = 0; }
+                    else MoveSelection(1);
+                    e.Handled = true; break;
                 case Key.Up: MoveSelection(-1); e.Handled = true; break;
                 case Key.PageDown: MoveSelection(5); e.Handled = true; break;
                 case Key.PageUp: MoveSelection(-5); e.Handled = true; break;
