@@ -94,6 +94,8 @@ namespace WinTools
         /// <summary>Barra larga quanto lo schermo, altrimenti centrata e larga quanto serve.</summary>
         public bool FullWidth { get; set; }
         public bool ShowLabels { get; set; } = true;
+        /// <summary>Riga di stato sotto i tasti: processore, memoria, rete, indirizzi IPv4 e porte COM.</summary>
+        public bool ShowInfoStrip { get; set; } = true;
         /// <summary>Quando la barra compare dal bordo, il cursore va subito nella ricerca (toglie il fuoco all'app in uso).</summary>
         public bool FocusOnEdge { get; set; } = true;
         public bool FirstRunDone { get; set; }

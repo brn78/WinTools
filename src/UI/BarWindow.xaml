@@ -162,6 +162,47 @@
           </StackPanel>
         </Grid>
 
+        <!-- ============================ RIGA INFORMAZIONI (CPU, RAM, rete, IPv4, COM) ============================ -->
+        <Border x:Name="InfoStrip" DockPanel.Dock="Top" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource Divider}" Padding="8,1,8,2" Visibility="Collapsed">
+          <Border.Resources>
+            <Style x:Key="InfoItem" TargetType="Button" BasedOn="{StaticResource SubtleButton}">
+              <Setter Property="Padding" Value="8,2"/>
+              <Setter Property="MinHeight" Value="22"/>
+              <Setter Property="Margin" Value="0,0,2,0"/>
+            </Style>
+            <Style x:Key="InfoText" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+              <Setter Property="FontSize" Value="12"/>
+              <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
+              <Setter Property="VerticalAlignment" Value="Center"/>
+              <Setter Property="Margin" Value="6,0,0,0"/>
+            </Style>
+            <Style x:Key="InfoIcon" TargetType="Path">
+              <Setter Property="Width" Value="14"/>
+              <Setter Property="Height" Value="14"/>
+              <Setter Property="Stretch" Value="Uniform"/>
+              <Setter Property="Fill" Value="{DynamicResource TextSecondary}"/>
+              <Setter Property="VerticalAlignment" Value="Center"/>
+            </Style>
+          </Border.Resources>
+          <StackPanel Orientation="Horizontal">
+            <Button Style="{StaticResource InfoItem}" Click="InfoCpu_Click" ToolTip="Processore · clic: Gestione attività">
+              <StackPanel Orientation="Horizontal"><Path x:Name="CpuIcon" Style="{StaticResource InfoIcon}"/><TextBlock x:Name="CpuText" Style="{StaticResource InfoText}" Text="CPU —"/></StackPanel>
+            </Button>
+            <Button Style="{StaticResource InfoItem}" Click="InfoCpu_Click" ToolTip="Memoria usata / totale · clic: Gestione attività">
+              <StackPanel Orientation="Horizontal"><Path x:Name="RamIcon" Style="{StaticResource InfoIcon}"/><TextBlock x:Name="RamText" Style="{StaticResource InfoText}" Text="RAM —"/></StackPanel>
+            </Button>
+            <Button x:Name="NetButton" Style="{StaticResource InfoItem}" Click="InfoNet_Click" ToolTip="Traffico di rete (scaricato · inviato) · clic: impostazioni di rete">
+              <StackPanel Orientation="Horizontal"><Path x:Name="NetIcon" Style="{StaticResource InfoIcon}"/><TextBlock x:Name="NetText" Style="{StaticResource InfoText}" Text="—"/></StackPanel>
+            </Button>
+            <Button x:Name="IpButton" Style="{StaticResource InfoItem}" Click="InfoIp_Click" ToolTip="Indirizzi IPv4 · clic: copia">
+              <StackPanel Orientation="Horizontal"><Path x:Name="IpIcon" Style="{StaticResource InfoIcon}"/><TextBlock x:Name="IpText" Style="{StaticResource InfoText}" Text="—"/></StackPanel>
+            </Button>
+            <Button x:Name="ComButton" Style="{StaticResource InfoItem}" Click="InfoCom_Click" ToolTip="Porte seriali · clic: Gestione dispositivi">
+              <StackPanel Orientation="Horizontal"><Path x:Name="ComIcon" Style="{StaticResource InfoIcon}"/><TextBlock x:Name="ComText" Style="{StaticResource InfoText}" Text="—"/></StackPanel>
+            </Button>
+          </StackPanel>
+        </Border>
+
         <!-- ============================ AVVISO ============================ -->
         <Border x:Name="Notice" DockPanel.Dock="Top" Visibility="Collapsed" CornerRadius="6" BorderThickness="1" Padding="12,8" Margin="12,2,12,8"
                 Background="{DynamicResource InfoFill}" BorderBrush="{DynamicResource CardStroke}">
