@@ -18,6 +18,9 @@ Non richiede installazione né dipendenze: **`WinTools.exe` è un unico file da 
 * **Spillo**: blocca la barra sempre visibile. **Ingranaggio**: impostazioni.
 * **Area di notifica**: clic sinistro mostra la barra, clic destro apre il menu (blocca, impostazioni, aggiorna l'indice, avvio con Windows, aggiornamenti, esci).
 
+## 🆕 Versione 1.1.2
+* **Menu del tasto destro con le icone** (risultati, tasti della barra, contenitori) e sottomenu «Sposta in» che si apre davvero, con la freccia.
+
 ## 🆕 Versione 1.1.1
 * **Trascinamento rifatto**: il tasto trascinato segue il mouse come «fantasma», una linea mostra dove finirà, il contenitore sotto il mouse si evidenzia. Funziona tra barra e menu dei contenitori in entrambe le direzioni e per riordinare dentro un contenitore. Non usa più il drag&drop di Windows (che restava a volte senza risposta); i file da Esplora file si trascinano come prima.
 
