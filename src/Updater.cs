@@ -167,7 +167,10 @@ namespace WinTools
                 catch { }
                 if (relaunch)
                 {
-                    try { Process.Start(new ProcessStartInfo(exe, "--updated") { UseShellExecute = true }); } catch { }
+                    // Prima si lascia il mutex di istanza unica: la nuova versione, trovandolo occupato, si chiuderebbe da sola
+                    Program.ReleaseInstance();
+                    try { Process.Start(new ProcessStartInfo(exe, "--updated") { UseShellExecute = true, WorkingDirectory = Path.GetDirectoryName(exe) }); }
+                    catch (Exception ex) { Program.LogError("Riavvio dopo aggiornamento", ex); }
                 }
                 return true;
             }

@@ -165,7 +165,8 @@ namespace WinTools
             if (Bar.IsBarVisible)
             {
                 // Bloccata, impegnata (si scrive, c'è un menu) o con il fuoco della tastiera: resta; si ritira con Esc o quando il fuoco va altrove
-                if (Settings.Pinned || Bar.KeepOpen || Bar.IsActive) { _awaySince = DateTime.MinValue; return; }
+                // Comparsa dal bordo con il cursore nella ricerca: è attiva, ma se non si è scritto né cliccato si ritira lo stesso
+                if (Settings.Pinned || Bar.KeepOpen || (Bar.IsActive && !Bar.AutoShown)) { _awaySince = DateTime.MinValue; return; }
                 if (Bar.ContainsScreenPoint(p.X, p.Y, 8)) { _awaySince = DateTime.MinValue; return; }
                 if (_awaySince == DateTime.MinValue) _awaySince = DateTime.Now;
                 else if ((DateTime.Now - _awaySince).TotalMilliseconds >= Settings.HideDelayMs) { _awaySince = DateTime.MinValue; Bar.HideBar(); }

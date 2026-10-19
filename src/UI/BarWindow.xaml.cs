@@ -197,10 +197,12 @@ namespace WinTools.UI
             // altrimenti si potrebbe scrivere nella casella ma i tasti finirebbero nell'app di prima
             PreviewMouseDown += (s, e) =>
             {
+                AutoShown = false;   // si sta usando la barra: resta finché è attiva
                 // Un clic nella barra fuori dal pannello dei filtri lo chiude (sul suo pulsante ci pensa il Click a chiuderlo)
                 if (FilterPopup.IsOpen && !FilterButton.IsMouseOver) FilterPopup.IsOpen = false;
                 EnsureActive(e.OriginalSource as DependencyObject);
             };
+            PreviewKeyDown += (s, e) => { AutoShown = false; };
             SizeChanged += (s, e) => { if (S.Edge == "bottom") Reposition(); };
             App.Current.Index.StatusChanged += () => Dispatcher.BeginInvoke(new Action(UpdateStatus));
         }
@@ -280,6 +282,7 @@ namespace WinTools.UI
                 Slide.Y = 0;
                 Panel.Opacity = 1;
             }
+            AutoShown = false;
             if (activate)
             {
                 KeepOpen = true;
@@ -298,9 +301,14 @@ namespace WinTools.UI
 
         bool _autoFocus;
 
+        /// <summary>Vero dalla comparsa dal bordo (con attivazione automatica) finché non si scrive o si fa clic: in questo stato la
+        /// barra si ritira quando il mouse si allontana, anche se ha il fuoco. Prima restava finché era attiva, e sembrava non chiudersi.</summary>
+        public bool AutoShown { get; private set; }
+
         /// <summary>
         /// Comparsa dal bordo: se l'opzione è attiva, la finestra si attiva e il cursore va nella ricerca (si può scrivere
-        /// subito); la barra resta finché è attiva, poi si ritira quando il fuoco va altrove o con Esc.
+        /// subito); la barra resta finché si scrive o si clicca, altrimenti si ritira quando il mouse si allontana, con Esc o
+        /// quando il fuoco va altrove.
         /// </summary>
         public void ShowFromEdge(Forms.Screen screen)
         {
@@ -314,6 +322,7 @@ namespace WinTools.UI
             try { SearchBox.Focus(); Keyboard.Focus(SearchBox); }
             finally { _autoFocus = false; }
             KeepOpen = Notice.Visibility == Visibility.Visible;
+            AutoShown = true;
         }
 
         /// <summary>Toglie il «non attivabile» e porta la finestra in primo piano; con un clic nella ricerca, fuoco alla casella.</summary>
@@ -345,6 +354,7 @@ namespace WinTools.UI
             FilterPopup.IsOpen = false;
             _hiding = true;
             KeepOpen = false;
+            AutoShown = false;
             double to = (S.Edge == "bottom" ? 1 : -1) * Math.Max(40, Panel.ActualHeight);
             var ease = new CubicEase { EasingMode = EasingMode.EaseIn };
             var slide = new DoubleAnimation(0, to, TimeSpan.FromMilliseconds(150)) { EasingFunction = ease };

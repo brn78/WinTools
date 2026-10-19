@@ -48,6 +48,14 @@ namespace WinTools
             {
                 bool createdNew;
                 _instance = new Mutex(true, MutexName, out createdNew);
+                if (!createdNew && Array.Exists(args, a => a.Equals("--updated", StringComparison.OrdinalIgnoreCase)))
+                {
+                    // Riavvio dopo l'aggiornamento: la versione precedente sta ancora chiudendo e tiene il mutex.
+                    // Si aspetta che lo lasci (o che il processo termini) invece di arrendersi: altrimenti la nuova
+                    // versione si chiuderebbe subito credendo che ce ne sia già una in esecuzione.
+                    try { createdNew = _instance.WaitOne(TimeSpan.FromSeconds(20)); }
+                    catch (AbandonedMutexException) { createdNew = true; }
+                }
                 if (!createdNew)
                 {
                     // Un'altra istanza c'è già: le si chiede di mostrare la barra
@@ -89,6 +97,14 @@ namespace WinTools
                 Fatal(ex);
                 return 1;
             }
+        }
+
+        /// <summary>Lascia il mutex di istanza unica: si chiama prima di avviare la nuova versione, così può partire subito.</summary>
+        public static void ReleaseInstance()
+        {
+            try { _instance?.ReleaseMutex(); } catch { }
+            try { _instance?.Dispose(); } catch { }
+            _instance = null;
         }
 
         /// <summary>Dopo un aggiornamento la versione precedente resta come «WinTools.old.exe»: si elimina in background.</summary>
