@@ -8,6 +8,7 @@ using System.Web.Script.Serialization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Threading;
 
 namespace WinTools.UI
@@ -171,7 +172,7 @@ namespace WinTools.UI
             PageAbout.Visibility = page == "about" ? Visibility.Visible : Visibility.Collapsed;
             switch (page)
             {
-                case "buttons": PageTitle.Text = "Tasti della barra"; PageSubtitle.Text = "I tasti nell'ordine in cui compaiono. Sulla barra si riordinano trascinandoli; un file trascinato sulla barra diventa un tasto."; break;
+                case "buttons": PageTitle.Text = "Tasti della barra"; PageSubtitle.Text = "I tasti nell'ordine in cui compaiono. Trascinali per riordinarli o per metterli dentro (o fuori da) un contenitore; doppio clic per modificarli."; break;
                 case "search": PageTitle.Text = "Ricerca e indice"; PageSubtitle.Text = "Che cosa trova la ricerca e dove legge. L'indice si aggiorna da solo in sottofondo."; break;
                 case "about": PageTitle.Text = "Informazioni e aggiornamenti"; PageSubtitle.Text = "Versione, aggiornamenti automatici e cartella dei dati."; break;
                 default: PageTitle.Text = "Generale"; PageSubtitle.Text = "Aspetto della barra, quando compare, tasto rapido e avvio con Windows."; break;
@@ -297,6 +298,157 @@ namespace WinTools.UI
             if (row.Button.Group && row.Button.Children.Count > 0) _work.Buttons.InsertRange(Math.Min(_work.Buttons.Count, Math.Max(0, i)), row.Button.Children);
             RefreshRows();
             if (_rows.Count > 0) ButtonsBox.SelectedIndex = Math.Min(sel, _rows.Count - 1);
+        }
+
+        // ------------------------------------------------------------------ trascinamento delle righe
+        // Come sulla barra: il mouse resta catturato dall'elenco, un fantasma segue il cursore, una linea mostra dove
+        // finirà la riga (nella barra o dentro il contenitore in cui sta cadendo), una cornice evidenzia il contenitore
+        // quando ci si lascia sopra. Al rilascio si sposta davvero; fuori dall'elenco non cambia niente.
+        sealed class RowDrag
+        {
+            public ButtonRow Row;
+            public Point Start;
+            public bool Active;
+            public List<BarButton> TargetList;
+            public int TargetIndex = -1;
+            public BarButton IntoGroup;
+        }
+        RowDrag _rowDrag;
+
+        ButtonRow RowAt(DependencyObject d)
+        {
+            while (d != null && !(d is ListBoxItem)) d = VisualTreeHelper.GetParent(d);
+            return (d as ListBoxItem)?.DataContext as ButtonRow;
+        }
+
+        void Rows_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            var row = RowAt(e.OriginalSource as DependencyObject);
+            _rowDrag = row == null ? null : new RowDrag { Row = row, Start = e.GetPosition(ButtonsBox) };
+        }
+
+        void Rows_MouseMove(object sender, MouseEventArgs e)
+        {
+            var d = _rowDrag;
+            if (d == null) return;
+            if (e.LeftButton != MouseButtonState.Pressed) { if (d.Active) EndRowDrag(false); else _rowDrag = null; return; }
+            var p = e.GetPosition(ButtonsBox);
+            if (!d.Active)
+            {
+                if (Math.Abs(p.X - d.Start.X) < 6 && Math.Abs(p.Y - d.Start.Y) < 6) return;
+                d.Active = true;
+                ButtonsBox.CaptureMouse();
+                RowGhostText.Text = d.Row.Label.Trim();
+                RowGhost.IsOpen = true;
+                Mouse.OverrideCursor = Cursors.Hand;
+            }
+            UpdateRowDrag(d, p);
+        }
+
+        void Rows_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            var d = _rowDrag;
+            if (d == null) return;
+            if (!d.Active) { _rowDrag = null; return; }
+            UpdateRowDrag(d, e.GetPosition(ButtonsBox));
+            e.Handled = true;
+            EndRowDrag(true);
+        }
+
+        void Rows_LostCapture(object sender, MouseEventArgs e) { if (_rowDrag != null && _rowDrag.Active) EndRowDrag(false); }
+
+        void UpdateRowDrag(RowDrag d, Point p)
+        {
+            double scale = VisualTreeHelper.GetDpi(this).DpiScaleX;
+            var sp = ButtonsBox.PointToScreen(p);
+            RowGhost.HorizontalOffset = sp.X / scale + 14;
+            RowGhost.VerticalOffset = sp.Y / scale + 10;
+
+            d.TargetList = null; d.TargetIndex = -1; d.IntoGroup = null;
+            RowDropLine.Visibility = Visibility.Collapsed;
+            RowDropBox.Visibility = Visibility.Collapsed;
+            if (p.X < 0 || p.X > ButtonsBox.ActualWidth || p.Y < -20 || p.Y > ButtonsBox.ActualHeight + 20) return;
+
+            var moving = d.Row.Button;
+            var host = (FrameworkElement)RowDropLine.Parent;
+            // La riga sotto il mouse (o l'ultima, se si è più in basso)
+            for (int i = 0; i < _rows.Count; i++)
+            {
+                var el = ButtonsBox.ItemContainerGenerator.ContainerFromIndex(i) as FrameworkElement;
+                if (el == null) continue;
+                var top = el.TranslatePoint(new Point(0, 0), ButtonsBox).Y;
+                double h = el.ActualHeight;
+                bool last = i == _rows.Count - 1;
+                if (p.Y >= top + h && !last) continue;
+                var row = _rows[i];
+                double rel = (p.Y - top) / Math.Max(1, h);
+                if (p.Y >= top + h) rel = 1;   // sotto l'ultima riga
+                // Dentro un contenitore: la parte centrale della sua riga (i contenitori non entrano in altri contenitori)
+                if (row.Button.Group && !moving.Group && row.Button != moving && rel > 0.25 && rel < 0.75)
+                {
+                    d.IntoGroup = row.Button;
+                    var y0 = el.TranslatePoint(new Point(0, 0), host).Y;
+                    RowDropBox.Margin = new Thickness(4, y0, 4, 0);
+                    RowDropBox.Height = h;
+                    RowDropBox.Visibility = Visibility.Visible;
+                    return;
+                }
+                bool before = rel < 0.5;
+                var list = row.Owner;
+                int idx = list.IndexOf(row.Button) + (before ? 0 : 1);
+                // Un contenitore (o un tasto lasciato subito sotto l'intestazione di un contenitore aperto) va a livello della barra
+                if (moving.Group && list != _work.Buttons)
+                {
+                    var parent = _work.Buttons.First(g => g.Children == list);
+                    list = _work.Buttons; idx = _work.Buttons.IndexOf(parent) + 1;
+                }
+                else if (!before && row.Button.Group && list == _work.Buttons && !moving.Group)
+                {
+                    // Subito sotto l'intestazione di un contenitore: dentro, in prima posizione
+                    list = row.Button.Children; idx = 0;
+                }
+                d.TargetList = list; d.TargetIndex = idx;
+                double ly = el.TranslatePoint(new Point(0, before ? 0 : h), host).Y - 1;
+                bool nested = list != _work.Buttons;
+                RowDropLine.Margin = new Thickness(nested ? 48 : 8, Math.Max(0, ly), 8, 0);
+                RowDropLine.Visibility = Visibility.Visible;
+                return;
+            }
+            // Elenco vuoto: in fondo alla barra
+            d.TargetList = _work.Buttons; d.TargetIndex = _work.Buttons.Count;
+        }
+
+        void EndRowDrag(bool commit)
+        {
+            var d = _rowDrag;
+            _rowDrag = null;
+            if (d == null) return;
+            RowGhost.IsOpen = false;
+            RowDropLine.Visibility = Visibility.Collapsed;
+            RowDropBox.Visibility = Visibility.Collapsed;
+            Mouse.OverrideCursor = null;
+            if (ButtonsBox.IsMouseCaptured) ButtonsBox.ReleaseMouseCapture();
+            if (!commit) return;
+            var b = d.Row.Button;
+            if (d.IntoGroup != null)
+            {
+                if (d.IntoGroup.Children.Contains(b)) return;
+                d.Row.Owner.Remove(b);
+                d.IntoGroup.Children.Add(b);
+            }
+            else if (d.TargetList != null && d.TargetIndex >= 0)
+            {
+                var list = d.TargetList;
+                int from = d.Row.Owner.IndexOf(b);
+                int to = d.TargetIndex;
+                if (ReferenceEquals(list, d.Row.Owner) && (to == from || to == from + 1)) return;   // lasciata dov'era
+                d.Row.Owner.Remove(b);
+                if (ReferenceEquals(list, d.Row.Owner) && to > from) to--;
+                list.Insert(Math.Max(0, Math.Min(list.Count, to)), b);
+            }
+            else return;
+            RefreshRows();
+            SelectButton(b);
         }
 
         void UpButton_Click(object sender, RoutedEventArgs e) { Move(-1); }

@@ -185,7 +185,9 @@
                 <Button Content="Ripristina i tasti predefiniti" Style="{StaticResource SubtleButton}" Click="ResetButtons_Click" Margin="8,0,0,6"/>
               </WrapPanel>
               <Border Grid.Row="1" Style="{StaticResource Card}" MinHeight="300">
-                <ListBox x:Name="ButtonsBox" MouseDoubleClick="EditButton_Click">
+                <Grid>
+                <ListBox x:Name="ButtonsBox" MouseDoubleClick="EditButton_Click" PreviewMouseLeftButtonDown="Rows_MouseDown" PreviewMouseMove="Rows_MouseMove"
+                         PreviewMouseLeftButtonUp="Rows_MouseUp" LostMouseCapture="Rows_LostCapture">
                   <ListBox.ItemTemplate>
                     <DataTemplate>
                       <Grid Height="44">
@@ -203,6 +205,15 @@
                     </DataTemplate>
                   </ListBox.ItemTemplate>
                 </ListBox>
+                <!-- trascinamento: linea di inserimento e cornice sul contenitore di destinazione -->
+                <Border x:Name="RowDropLine" Height="3" CornerRadius="1.5" Background="{DynamicResource Accent}" VerticalAlignment="Top" Margin="8,0" Visibility="Collapsed" IsHitTestVisible="False"/>
+                <Border x:Name="RowDropBox" BorderBrush="{DynamicResource Accent}" BorderThickness="2" CornerRadius="4" VerticalAlignment="Top" Margin="4,0" Visibility="Collapsed" IsHitTestVisible="False"/>
+                <Popup x:Name="RowGhost" Placement="Absolute" AllowsTransparency="True" PopupAnimation="None" IsHitTestVisible="False" Focusable="False">
+                  <Border Background="{DynamicResource DialogFill}" BorderBrush="{DynamicResource Accent}" BorderThickness="1" CornerRadius="6" Padding="12,6" Opacity="0.92">
+                    <TextBlock x:Name="RowGhostText" MaxWidth="260" TextTrimming="CharacterEllipsis"/>
+                  </Border>
+                </Popup>
+                </Grid>
               </Border>
             </Grid>
 
