@@ -83,7 +83,7 @@ namespace WinTools.UI
             if (IsGlyph(b.Icon)) { look.Glyph = ((char)Convert.ToInt32(b.Icon, 16)).ToString(); return look; }
             if (b.Group && string.IsNullOrEmpty(b.Icon)) { look.Glyph = ""; return look; }
             string key = string.IsNullOrEmpty(b.Icon) ? Tools.ResolveShortcut(Environment.ExpandEnvironmentVariables(b.Target)) : b.Icon;
-            if (key.StartsWith("shell:", StringComparison.OrdinalIgnoreCase) && !key.StartsWith("shell:AppsFolder", StringComparison.OrdinalIgnoreCase)) { look.Glyph = ""; return look; }
+            if (key.StartsWith("shell:", StringComparison.OrdinalIgnoreCase) && !key.StartsWith("shell:AppsFolder", StringComparison.OrdinalIgnoreCase) && !key.StartsWith("shell:::", StringComparison.OrdinalIgnoreCase)) { look.Glyph = ""; return look; }
             look.ImageKey = key;
             // Se l'immagine non arriva, un glifo di riserva
             look.Glyph = key.IndexOf(':') > 0 && !Path.IsPathRooted(key) ? "" : "";

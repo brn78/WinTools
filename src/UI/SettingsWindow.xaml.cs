@@ -19,7 +19,7 @@ namespace WinTools.UI
         public List<BarButton> Owner { get; }
         public bool Nested { get; }
         public ButtonRow(BarButton b, List<BarButton> owner, bool nested) : base(b) { Owner = owner; Nested = nested; }
-        public new string Label => (Nested ? "      ↳ " : "") + (Button.Separator ? "────────  separatore  ────────" : base.Label);
+        public new string Label => (Nested ? "      ↳ " : "") + (Button.Separator ? (string.IsNullOrEmpty(base.Label) ? "────────  separatore  ────────" : $"────────  {base.Label}  ────────") : base.Label);
         public string Flags => string.Join(" · ", new[]
         {
             Button.Separator ? "separatore" : "",
@@ -261,6 +261,14 @@ namespace WinTools.UI
         {
             var row = ButtonsBox.SelectedItem as ButtonRow;
             if (row == null) return;
+            if (row.Button.Separator)
+            {
+                // Solo dentro un contenitore il separatore può avere una breve descrizione; sulla barra è una linea e basta
+                if (!row.Nested) return;
+                var p = new TextPromptWindow("Separatore", "Breve descrizione mostrata accanto alla linea (lascia vuoto per una linea semplice).", row.Button.Label ?? "") { Owner = this };
+                if (p.ShowDialog() == true) { row.Button.Label = (p.Value ?? "").Trim(); RefreshRows(); }
+                return;
+            }
             var copy = row.Button.Clone();
             var w = new ButtonEditorWindow(copy) { Owner = this };
             if (w.ShowDialog() == true)

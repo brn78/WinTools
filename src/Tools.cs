@@ -146,6 +146,16 @@ namespace WinTools
         }
 
         /// <summary>La finestra Proprietà di Windows per un file o una cartella.</summary>
+        /// <summary>Verbo della shell su un bersaglio (percorso o shell:::{CLSID}); false se la shell non lo conosce.</summary>
+        public static bool ShellVerb(string target, string verb)
+        {
+            bool ok = Native.ShellVerb(target, verb);
+            if (!ok) Program.LogError("Verbo «" + verb + "»", new Exception("ShellExecuteEx non riuscito per " + target));
+            return ok;
+        }
+
+        public static void EmptyRecycleBin() { Native.EmptyRecycleBin(); }
+
         public static void ShowProperties(string path)
         {
             if (!Native.ShowProperties(path)) Program.LogError("Proprietà", new Exception("ShellExecuteEx non riuscito per " + path));

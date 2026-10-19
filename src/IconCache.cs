@@ -76,7 +76,8 @@ namespace WinTools
                 return bi;
             }
             string path = key;
-            if (!key.StartsWith("shell:", StringComparison.OrdinalIgnoreCase))
+            if (key.StartsWith("shell:::", StringComparison.OrdinalIgnoreCase)) path = key.Substring("shell:".Length);   // «::{CLSID}» è il nome di analisi
+            else if (!key.StartsWith("shell:", StringComparison.OrdinalIgnoreCase))
             {
                 path = Environment.ExpandEnvironmentVariables(key);
                 // Un comando senza percorso (notepad.exe, calc.exe): lo si cerca nel PATH per avere la sua icona
