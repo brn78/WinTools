@@ -97,6 +97,7 @@ namespace WinTools.UI
             Select(MonitorBox, _work.Monitor);
             FullWidthBox.IsChecked = _work.FullWidth;
             LabelsBox.IsChecked = _work.ShowLabels;
+            InfoStripBox.IsChecked = _work.ShowInfoStrip;
             EdgeTriggerBox.IsChecked = _work.EdgeTrigger;
             FocusEdgeBox.IsChecked = _work.FocusOnEdge;
             EdgeDelayBox.Text = _work.EdgeDelayMs.ToString();
@@ -595,6 +596,7 @@ namespace WinTools.UI
             s.Monitor = Selected(MonitorBox) ?? "cursor";
             s.FullWidth = FullWidthBox.IsChecked == true;
             s.ShowLabels = LabelsBox.IsChecked == true;
+            s.ShowInfoStrip = InfoStripBox.IsChecked == true;
             s.EdgeTrigger = EdgeTriggerBox.IsChecked == true;
             s.FocusOnEdge = FocusEdgeBox.IsChecked == true;
             int n;

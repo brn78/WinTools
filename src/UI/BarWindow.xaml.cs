@@ -181,6 +181,7 @@ namespace WinTools.UI
             ButtonsList.ItemsSource = _buttons;
             GroupList.ItemsSource = _groupItems;
             ResultsList.ItemsSource = _results;
+            SetupInfoStrip();
             _searchTimer.Tick += (s, e) => { _searchTimer.Stop(); RunSearch(); };
             _noticeTimer.Tick += (s, e) => { _noticeTimer.Stop(); HideNotice(); };
             Deactivated += (s, e) =>
@@ -231,8 +232,11 @@ namespace WinTools.UI
             ((DropShadowEffect)Panel.Effect).Direction = bottom ? 90 : 270;
             DockPanel.SetDock(BarRow, bottom ? Dock.Bottom : Dock.Top);
             DockPanel.SetDock(Notice, bottom ? Dock.Bottom : Dock.Top);
+            DockPanel.SetDock(InfoStrip, bottom ? Dock.Bottom : Dock.Top);
+            InfoStrip.BorderThickness = bottom ? new Thickness(0, 0, 0, 1) : new Thickness(0, 1, 0, 0);
+            InfoStrip.Visibility = S.ShowInfoStrip ? Visibility.Visible : Visibility.Collapsed;
             GroupPopup.Placement = bottom ? PlacementMode.Top : PlacementMode.Bottom;
-            if (IsVisible) Reposition();
+            if (IsVisible) { StopInfo(); StartInfo(); Reposition(); }
         }
 
         /// <summary>Salva e ridisegna i tasti dopo una modifica.</summary>
@@ -282,6 +286,7 @@ namespace WinTools.UI
             else KeepOpen = Notice.Visibility == Visibility.Visible;
             UpdateRecentsChevron();
             UpdateStatus();
+            StartInfo();
         }
 
         bool _autoFocus;
@@ -333,6 +338,7 @@ namespace WinTools.UI
             {
                 if (!_hiding) return;
                 _hiding = false;
+                StopInfo();
                 Hide();
                 Slide.BeginAnimation(TranslateTransform.YProperty, null);
                 Slide.Y = 0;
@@ -415,6 +421,74 @@ namespace WinTools.UI
 
         void NoticeAction_Click(object sender, RoutedEventArgs e) { var a = _noticeAction; HideNotice(); a?.Invoke(); }
         void NoticeClose_Click(object sender, RoutedEventArgs e) { _noticeTimer.Stop(); HideNotice(); }
+
+        // ------------------------------------------------------------------ riga informazioni (CPU, RAM, rete, IPv4, COM)
+        readonly SystemStats _stats = new SystemStats();
+        readonly DispatcherTimer _infoTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        bool _infoIconsSet;
+        string _lastIps = "";
+
+        void SetupInfoStrip()
+        {
+            _infoTimer.Tick += (s, e) => UpdateInfo();
+            if (_infoIconsSet) return;
+            _infoIconsSet = true;
+            // Icone dal catalogo Material Design (caricato in anticipo all'avvio)
+            Task.Run(() => new[] { "cpu-64-bit", "memory", "web", "ip-network", "serial-port" }.Select(n => IconCatalog.Find(n)?.Geometry).ToArray()).ContinueWith(t =>
+            {
+                if (t.IsFaulted) return;
+                var g = t.Result;
+                CpuIcon.Data = g[0]; RamIcon.Data = g[1]; NetIcon.Data = g[2]; IpIcon.Data = g[3]; ComIcon.Data = g[4];
+            }, TaskScheduler.FromCurrentSynchronizationContext());
+        }
+
+        void StartInfo() { if (S.ShowInfoStrip) { UpdateInfo(); _infoTimer.Start(); } }
+        void StopInfo() { _infoTimer.Stop(); }
+
+        void UpdateInfo()
+        {
+            if (!S.ShowInfoStrip || !IsVisible) return;
+            SystemStats.Snapshot s;
+            try { s = _stats.Sample(); } catch { return; }
+            CpuText.Text = $"CPU {s.CpuPercent:0}%";
+            RamText.Text = s.RamTotal > 0 ? $"RAM {SystemStats.FormatGb(s.RamUsed)}/{SystemStats.FormatGb(s.RamTotal)} GB" : "RAM —";
+            if (s.Online)
+            {
+                NetText.Text = $"↓ {SystemStats.FormatRate(s.RxBytesPerSec)}  ↑ {SystemStats.FormatRate(s.TxBytesPerSec)}";
+                NetText.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondary");
+                NetIcon.SetResourceReference(System.Windows.Shapes.Shape.FillProperty, "TextSecondary");
+            }
+            else
+            {
+                NetText.Text = "Offline";
+                NetText.SetResourceReference(TextBlock.ForegroundProperty, "ErrorText");
+                NetIcon.SetResourceReference(System.Windows.Shapes.Shape.FillProperty, "ErrorText");
+            }
+            string ips = string.Join(" · ", s.Ipv4.Take(3).Select(t => t.Item1)) + (s.Ipv4.Count > 3 ? $" +{s.Ipv4.Count - 3}" : "");
+            if (ips != _lastIps)
+            {
+                _lastIps = ips;
+                IpText.Text = s.Ipv4.Count == 0 ? "Nessun IPv4" : ips;
+                IpButton.ToolTip = s.Ipv4.Count == 0 ? "Nessun indirizzo IPv4 attivo" : string.Join("\n", s.Ipv4.Select(t => $"{t.Item1}  ·  {t.Item2}")) + "\n\nClic: copia gli indirizzi";
+            }
+            string com = s.ComPorts.Count == 0 ? "Nessuna COM" : string.Join(" · ", s.ComPorts.Select(t => t.Item1));
+            if (ComText.Text != com)
+            {
+                ComText.Text = com;
+                ComButton.ToolTip = s.ComPorts.Count == 0 ? "Nessuna porta seriale · clic: Gestione dispositivi" : string.Join("\n", s.ComPorts.Select(t => t.Item2 == "" ? t.Item1 : $"{t.Item1}  ·  {t.Item2}")) + "\n\nClic: Gestione dispositivi";
+            }
+        }
+
+        void InfoCpu_Click(object sender, RoutedEventArgs e) { Tools.Open("taskmgr.exe"); if (!S.Pinned) HideBar(); }
+        void InfoNet_Click(object sender, RoutedEventArgs e) { Tools.Open("ms-settings:network"); if (!S.Pinned) HideBar(); }
+        void InfoCom_Click(object sender, RoutedEventArgs e) { Tools.Open("devmgmt.msc"); if (!S.Pinned) HideBar(); }
+        void InfoIp_Click(object sender, RoutedEventArgs e)
+        {
+            var ips = _stats.Sample().Ipv4;
+            if (ips.Count == 0) return;
+            Tools.CopyToClipboard(string.Join(Environment.NewLine, ips.Select(t => t.Item1)));
+            ShowNotice("success", "Indirizzi copiati", string.Join(" · ", ips.Select(t => t.Item1)));
+        }
 
         // ------------------------------------------------------------------ pulsanti di servizio
         void Pin_Click(object sender, RoutedEventArgs e) { App.Current.SetPinned(!S.Pinned); }
