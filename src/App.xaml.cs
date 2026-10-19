@@ -60,6 +60,7 @@ namespace WinTools
                 if (a.Equals("--set-autostart=1", StringComparison.OrdinalIgnoreCase)) { Settings.AutoStart = true; Settings.Save(); }
                 else if (a.Equals("--set-autostart=0", StringComparison.OrdinalIgnoreCase)) { Settings.AutoStart = false; Settings.Save(); }
             }
+            Theme.AccentOverride = Settings.AccentColor;
             Theme.Apply(Settings.Theme);
             SystemEvents.UserPreferenceChanged += (s, a) => { Theme.Invalidate(); Dispatcher.BeginInvoke(new Action(() => Theme.Apply(Settings.Theme))); };
             SystemEvents.DisplaySettingsChanged += (s, a) => Dispatcher.BeginInvoke(new Action(() => Bar?.Reposition()));
@@ -111,6 +112,7 @@ namespace WinTools
         public void ApplySettings(bool indexChanged, bool appsChanged)
         {
             Theme.Invalidate();
+            Theme.AccentOverride = Settings.AccentColor;
             Theme.Apply(Settings.Theme);
             RegisterHotkey();
             Tools.SetAutoStart(Settings.AutoStart);

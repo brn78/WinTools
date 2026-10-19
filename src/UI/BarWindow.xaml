@@ -108,10 +108,17 @@
                          Foreground="{DynamicResource TextTertiary}" FontSize="14.5" IsHitTestVisible="False"/>
               <TextBox Grid.Column="1" x:Name="SearchBox" Style="{StaticResource SearchBox}" Padding="0,0,0,0" FontSize="14.5" VerticalAlignment="Center"
                        TextChanged="SearchBox_TextChanged" PreviewKeyDown="SearchBox_PreviewKeyDown" GotKeyboardFocus="SearchBox_GotFocus" LostKeyboardFocus="SearchBox_LostFocus"/>
-              <Button Grid.Column="2" x:Name="ClearSearch" Style="{StaticResource IconButton}" Width="30" Height="30" Margin="0,0,3,0" Visibility="Collapsed"
-                      Click="ClearSearch_Click" ToolTip="Cancella">
-                <TextBlock Style="{StaticResource Glyph}" Text="&#xE711;" FontSize="12"/>
-              </Button>
+              <StackPanel Grid.Column="2" Orientation="Horizontal">
+                <!-- compare solo con la casella vuota e dei recenti da mostrare -->
+                <Button x:Name="RecentsButton" Style="{StaticResource IconButton}" Width="30" Height="30" Margin="0,0,3,0" Visibility="Collapsed"
+                        Click="RecentsButton_Click" ToolTip="Recenti (freccia giù)">
+                  <TextBlock x:Name="RecentsGlyph" Style="{StaticResource Glyph}" Text="&#xE70D;" FontSize="12" Foreground="{DynamicResource TextSecondary}"/>
+                </Button>
+                <Button x:Name="ClearSearch" Style="{StaticResource IconButton}" Width="30" Height="30" Margin="0,0,3,0" Visibility="Collapsed"
+                        Click="ClearSearch_Click" ToolTip="Cancella">
+                  <TextBlock Style="{StaticResource Glyph}" Text="&#xE711;" FontSize="12"/>
+                </Button>
+              </StackPanel>
             </Grid>
           </Border>
 

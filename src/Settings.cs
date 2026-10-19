@@ -71,6 +71,8 @@ namespace WinTools
         public int SchemaVersion { get; set; } = 1;
         /// <summary>system, dark o light.</summary>
         public string Theme { get; set; } = "system";
+        /// <summary>Colore di accento scelto a mano («#RRGGBB»); vuoto = quello di Windows.</summary>
+        public string AccentColor { get; set; } = "";
         /// <summary>top o bottom: lato dello schermo da cui compare la barra.</summary>
         public string Edge { get; set; } = "top";
         /// <summary>La barra compare quando il mouse tocca il bordo.</summary>
