@@ -23,6 +23,9 @@ In entrambi i casi l'aggiornamento automatico sostituisce l'exe sul posto.
 * **Spillo**: blocca la barra sempre visibile. **Ingranaggio**: impostazioni.
 * **Area di notifica**: clic sinistro mostra la barra, clic destro apre il menu (blocca, impostazioni, aggiorna l'indice, avvio con Windows, aggiornamenti, esci).
 
+## 🆕 Versione 1.5.1
+* Riga informazioni con larghezze fisse e cifre a larghezza uniforme: i valori cambiano senza far scorrere il testo.
+
 ## 🆕 Versione 1.5.0
 * **Riga informazioni** sotto i tasti: **CPU** e **RAM** (clic: Gestione attività), **rete** con traffico scaricato e inviato oppure «Offline» in rosso (clic: impostazioni di rete), **indirizzi IPv4** delle schede attive con il nome della scheda nel suggerimento (clic: li copia), **porte COM** con il nome del dispositivo (clic: Gestione dispositivi). Si aggiorna ogni secondo solo mentre la barra è visibile; si spegne da *Impostazioni → Generale*.
 

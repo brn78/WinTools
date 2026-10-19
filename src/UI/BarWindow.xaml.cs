@@ -454,7 +454,7 @@ namespace WinTools.UI
             RamText.Text = s.RamTotal > 0 ? $"RAM {SystemStats.FormatGb(s.RamUsed)}/{SystemStats.FormatGb(s.RamTotal)} GB" : "RAM —";
             if (s.Online)
             {
-                NetText.Text = $"↓ {SystemStats.FormatRate(s.RxBytesPerSec)}  ↑ {SystemStats.FormatRate(s.TxBytesPerSec)}";
+                NetText.Text = $"↓ {SystemStats.FormatRate(s.RxBytesPerSec),9}  ↑ {SystemStats.FormatRate(s.TxBytesPerSec),9}";
                 NetText.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondary");
                 NetIcon.SetResourceReference(System.Windows.Shapes.Shape.FillProperty, "TextSecondary");
             }
