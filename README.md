@@ -23,6 +23,9 @@ In entrambi i casi l'aggiornamento automatico sostituisce l'exe sul posto.
 * **Spillo**: blocca la barra sempre visibile. **Ingranaggio**: impostazioni.
 * **Area di notifica**: clic sinistro mostra la barra, clic destro apre il menu (blocca, impostazioni, aggiorna l'indice, avvio con Windows, aggiornamenti, esci).
 
+## 🆕 Versione 1.3.4
+* **Trascinamento anche nell'elenco dei tasti delle impostazioni**: riordina, trascina dentro un contenitore (cornice sulla sua riga) o fuori, con fantasma e linea di inserimento come sulla barra.
+
 ## 🆕 Versione 1.3.3
 * **Colore di accento a scelta** (*Impostazioni → Generale → Aspetto*): quello di Windows oppure uno tuo, per icone dei tasti, interruttori, bordo della ricerca e linea di inserimento.
 * **Chevron dei recenti** in fondo alla casella: compare quando ci sono recenti e la casella è vuota; un clic apre o chiude l'elenco.
