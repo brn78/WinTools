@@ -78,7 +78,7 @@ namespace WinTools
                 t["AccentDisabled"] = "#28FFFFFF";
                 t["ToggleOffStroke"] = "#9BFFFFFF"; t["ToggleOffKnob"] = "#C5FFFFFF"; t["ToggleOnKnob"] = "#000000";
                 t["ProgressTrack"] = "#2EFFFFFF"; t["ScrollThumb"] = "#7DFFFFFF"; t["ScrollThumbHover"] = "#C5FFFFFF";
-                t["DialogFill"] = "#2C2C2C"; t["DialogFooterFill"] = "#212121"; t["Scrim"] = "#66000000"; t["Divider"] = "#14FFFFFF";
+                t["DialogFill"] = "#2C2C2C"; t["DialogFooterFill"] = "#212121"; t["Scrim"] = "#66000000"; t["Divider"] = "#14FFFFFF"; t["SeparatorLine"] = "#4DFFFFFF"; t["EngravedText"] = "#FF121212"; t["EngravedLight"] = "#40FFFFFF";
                 t["SuccessText"] = "#6CCB5F"; t["SuccessFill"] = "#393D1B"; t["WarnText"] = "#FCE100"; t["WarnFill"] = "#433519";
                 t["ErrorText"] = "#FF99A4"; t["ErrorFill"] = "#442726"; t["InfoText"] = "#99DDFF"; t["InfoFill"] = "#26323B";
                 t["TextBoxFill"] = "#0FFFFFFF"; t["TextBoxFillFocused"] = "#1E1E1E"; t["TextBoxStroke"] = "#8AFFFFFF";
@@ -93,7 +93,7 @@ namespace WinTools
                 t["AccentDisabled"] = "#37000000";
                 t["ToggleOffStroke"] = "#72000000"; t["ToggleOffKnob"] = "#99000000"; t["ToggleOnKnob"] = "#FFFFFF";
                 t["ProgressTrack"] = "#1A000000"; t["ScrollThumb"] = "#72000000"; t["ScrollThumbHover"] = "#9E000000";
-                t["DialogFill"] = "#FFFFFF"; t["DialogFooterFill"] = "#F3F3F3"; t["Scrim"] = "#4D000000"; t["Divider"] = "#0F000000";
+                t["DialogFill"] = "#FFFFFF"; t["DialogFooterFill"] = "#F3F3F3"; t["Scrim"] = "#4D000000"; t["Divider"] = "#0F000000"; t["SeparatorLine"] = "#38000000"; t["EngravedText"] = "#FFB4B4B4"; t["EngravedLight"] = "#FFFFFFFF";
                 t["SuccessText"] = "#0F7B0F"; t["SuccessFill"] = "#DFF6DD"; t["WarnText"] = "#9D5D00"; t["WarnFill"] = "#FFF4CE";
                 t["ErrorText"] = "#C42B1C"; t["ErrorFill"] = "#FDE7E9"; t["InfoText"] = "#005FB8"; t["InfoFill"] = "#E5F1FB";
                 t["TextBoxFill"] = "#B3FFFFFF"; t["TextBoxFillFocused"] = "#FFFFFF"; t["TextBoxStroke"] = "#72000000";

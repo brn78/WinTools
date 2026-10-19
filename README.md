@@ -23,6 +23,13 @@ In entrambi i casi l'aggiornamento automatico sostituisce l'exe sul posto.
 * **Spillo**: blocca la barra sempre visibile. **Ingranaggio**: impostazioni.
 * **Area di notifica**: clic sinistro mostra la barra, clic destro apre il menu (blocca, impostazioni, aggiorna l'indice, avvio con Windows, aggiornamenti, esci).
 
+## 🆕 Versione 1.7.1
+* **Trascinamento anche di Questo PC, Rete, Cestino** e degli altri elementi del desktop senza percorso: arrivano nel formato della shell («Shell IDList Array») e diventano tasti con la loro icona, che aprono la cartella giusta. Prima il cursore mostrava il divieto. Nel loro menu ci sono le voci di Esplora file: **Gestione** e **Proprietà** per Questo PC, **Connessioni di rete** e Proprietà per Rete, **Svuota il Cestino** e Proprietà per il Cestino; anche i tasti con un percorso hanno ora **Proprietà**.
+* **La barra compare anche mentre trascini**: con un tasto del mouse premuto, dopo una sosta di poco meno di un secondo sul bordo si apre senza prendere il fuoco, così puoi rilasciarci sopra file e icone. Prima, iniziando a trascinare dal desktop, la barra si ritirava e non tornava fino al rilascio.
+* **Separatori visibili**: la linea è più marcata sia sulla barra sia nel menu dei contenitori, dove prima collassava a larghezza zero e si vedeva solo un vuoto.
+* **Descrizione del separatore nei contenitori**: tasto destro sul separatore → «Descrizione…» (oppure Modifica nelle impostazioni); il testo compare in colore accento a sinistra della linea, come un titolo di sezione. Sulla barra i separatori restano linee semplici.
+* Il menu del contenitore **resta al suo posto** quando aggiungi o togli un separatore o ci rilasci dentro dei file: prima si spostava sotto la casella di ricerca.
+* **Riga informazioni in colore accento** (rosso solo se la rete è assente) e firma **«2026 © Leonardi Bruno»** incisa a destra: il clic apre github.com/brn78.
 ## 🆕 Versione 1.7.0
 * **Più file trascinati insieme sulla barra diventano un contenitore**: il nome è quello della cartella che li contiene, l'avviso offre subito «Rinomina…». Con **Maiusc** premuto durante il rilascio si ottengono tasti separati come prima; rilasciati su un contenitore esistente o nel suo menu aperto, finiscono lì dentro.
 

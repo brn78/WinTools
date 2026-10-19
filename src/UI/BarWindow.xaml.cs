@@ -47,12 +47,16 @@ namespace WinTools.UI
         public double MinWidth => IsSeparator ? 0 : 56;
         public Thickness Pad => IsSeparator ? new Thickness(5, 4, 5, 4) : new Thickness(10, 4, 10, 4);
         public Thickness GroupPad => IsSeparator ? new Thickness(10, 2, 10, 2) : new Thickness(10, 6, 10, 6);
+        /// <summary>Nel menu del contenitore il separatore è una voce bassa, non alta quanto un tasto.</summary>
+        public double GroupMinHeight => IsSeparator ? 0 : 32;
+        /// <summary>Separatore con una breve descrizione (solo nel menu dei contenitori): il testo a sinistra della linea.</summary>
+        public Visibility SeparatorLabelVisibility => IsSeparator && !string.IsNullOrEmpty(Button.Label) ? Visibility.Visible : Visibility.Collapsed;
         public string Label => Button.Label;
         public string Tooltip
         {
             get
             {
-                if (IsSeparator) return "Separatore · trascinalo per spostarlo, tasto destro per toglierlo";
+                if (IsSeparator) return (string.IsNullOrEmpty(Button.Label) ? "" : Button.Label + "\n") + "Separatore · trascinalo per spostarlo, tasto destro per la descrizione o per toglierlo";
                 if (IsGroup) return $"{Button.Label}\n{Button.Children.Count} {(Button.Children.Count == 1 ? "tasto" : "tasti")} · clic per aprire, trascina qui un tasto per aggiungerlo";
                 if (string.IsNullOrEmpty(Button.Label)) return Button.Target;
                 return (Button.IconOnly || !ShowLabels ? Button.Label + "\n" : "") + Button.Target + (Button.Admin ? "  (amministratore)" : "");
@@ -230,6 +234,9 @@ namespace WinTools.UI
             _buttons.Clear();
             foreach (var b in S.Buttons) _buttons.Add(new ButtonVm(b, S.ShowLabels));
             if (_openGroup != null) RefreshGroupItems();
+            // I tasti sono stati ricreati: il menu del contenitore aperto va riancorato al nuovo tasto, altrimenti
+            // il popup resta legato a un elemento staccato dall'albero e si sposta all'angolo della finestra
+            if (GroupPopup.IsOpen && _openGroup != null) ReanchorGroupPopup();
             BarRow.Height = S.ShowLabels && S.Buttons.Any(b => !b.IconOnly && !string.IsNullOrEmpty(b.Label)) ? 64 : 52;
             PinGlyph.Text = S.Pinned ? "" : "";
             PinButton.ToolTip = S.Pinned ? "Sblocca la barra (si nasconde da sola)" : "Blocca la barra (sempre visibile)";
@@ -589,8 +596,8 @@ namespace WinTools.UI
             if (s.Online)
             {
                 NetText.Text = $"↓ {SystemStats.FormatRate(s.RxBytesPerSec),9}  ↑ {SystemStats.FormatRate(s.TxBytesPerSec),9}";
-                NetText.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondary");
-                NetIcon.SetResourceReference(System.Windows.Shapes.Shape.FillProperty, "TextSecondary");
+                NetText.SetResourceReference(TextBlock.ForegroundProperty, "Accent");
+                NetIcon.SetResourceReference(System.Windows.Shapes.Shape.FillProperty, "Accent");
             }
             else
             {
@@ -626,6 +633,7 @@ namespace WinTools.UI
         }
 
         void InfoCpu_Click(object sender, RoutedEventArgs e) { Tools.Open("taskmgr.exe"); if (!S.Pinned) HideBar(); }
+        void Signature_Click(object sender, RoutedEventArgs e) { Tools.Open("https://github.com/brn78"); if (!S.Pinned) HideBar(); }
         void InfoNet_Click(object sender, RoutedEventArgs e) { Tools.Open("ms-settings:network"); if (!S.Pinned) HideBar(); }
 
         void InfoCom_Click(object sender, RoutedEventArgs e)
@@ -925,30 +933,78 @@ namespace WinTools.UI
         }
 
         // ------------------------------------------------------------------ file trascinati da Esplora file (drag&drop di Windows)
+        const string ShellIdListFormat = "Shell IDList Array";
+
+        static bool CanDrop(IDataObject d) => d.GetDataPresent(DataFormats.FileDrop) || d.GetDataPresent(ShellIdListFormat);
+
+        /// <summary>
+        /// L'effetto da rispondere alla sorgente: dev'essere tra quelli che consente, altrimenti OLE mostra il divieto.
+        /// Per Questo PC, Rete, Cestino… Esplora file permette solo «collegamento»; per i file anche copia. Qui si crea
+        /// comunque un tasto, quindi «collegamento» è il più fedele; mai «sposta», che farebbe eliminare gli originali.
+        /// </summary>
+        static DragDropEffects DropEffectFor(DragEventArgs e)
+        {
+            if (!CanDrop(e.Data)) return DragDropEffects.None;
+            if ((e.AllowedEffects & DragDropEffects.Link) != 0) return DragDropEffects.Link;
+            if ((e.AllowedEffects & DragDropEffects.Copy) != 0) return DragDropEffects.Copy;
+            return DragDropEffects.None;
+        }
+
+        /// <summary>
+        /// I tasti da creare per ciò che è stato trascinato: file e cartelle (FileDrop) oppure, quando non hanno un percorso
+        /// (Questo PC, Rete, Cestino, Pannello di controllo…), gli elementi della shell con il loro nome di analisi.
+        /// </summary>
+        static List<BarButton> DroppedButtons(IDataObject d)
+        {
+            var list = new List<BarButton>();
+            try
+            {
+                if (d.GetDataPresent(DataFormats.FileDrop))
+                {
+                    var files = d.GetData(DataFormats.FileDrop) as string[];
+                    if (files != null) list.AddRange(files.Where(f => !string.IsNullOrEmpty(f)).Select(ButtonForPath));
+                }
+                if (list.Count == 0 && d.GetDataPresent(ShellIdListFormat))
+                {
+                    var obj = d.GetData(ShellIdListFormat);
+                    byte[] bytes = obj as byte[];
+                    if (bytes == null && obj is MemoryStream ms) bytes = ms.ToArray();
+                    foreach (var it in Native.ShellItemsFromIdList(bytes))
+                    {
+                        string parsing = it.Item1;
+                        if (Path.IsPathRooted(parsing) && !parsing.StartsWith("::")) list.Add(ButtonForPath(parsing));
+                        else list.Add(new BarButton { Label = it.Item2, Target = parsing.StartsWith("::") ? "shell:" + parsing : parsing });
+                    }
+                }
+            }
+            catch (Exception ex) { Program.LogError("Elementi trascinati", ex); }
+            return list;
+        }
+
         void Buttons_DragOver(object sender, DragEventArgs e)
         {
-            e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
+            e.Effects = DropEffectFor(e);
             e.Handled = true;
         }
 
         void Buttons_Drop(object sender, DragEventArgs e)
         {
             e.Handled = true;
-            if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
-            var files = e.Data.GetData(DataFormats.FileDrop) as string[];
-            if (files == null) return;
+            e.Effects = DropEffectFor(e);
+            if (e.Effects == DragDropEffects.None) return;
+            var buttons = DroppedButtons(e.Data);
+            if (buttons.Count == 0) return;
             var targetVm = (sender as Button)?.Tag as ButtonVm;
             Point sp;
             try { sp = PointToScreen(e.GetPosition(this)); } catch { sp = new Point(0, 0); }
             bool ontoGroup = targetVm != null && targetVm.IsGroup;
             var list = ontoGroup ? targetVm.Button.Children : S.Buttons;
             int at = ontoGroup ? list.Count : Math.Max(0, Math.Min(S.Buttons.Count, IndexIn(ButtonsList, sp, false)));
-            var buttons = files.Select(ButtonForPath).ToList();
-            // Più file insieme sulla barra: diventano un contenitore (con Maiusc premuto, tasti separati come prima)
+            // Più elementi insieme sulla barra: diventano un contenitore (con Maiusc premuto, tasti separati come prima)
             bool shift = (e.KeyStates & DragDropKeyStates.ShiftKey) != 0;
             if (buttons.Count >= 2 && !ontoGroup && !shift)
             {
-                var g = new BarButton { Group = true, Icon = "E8B7", Label = GroupNameFor(files), Children = buttons };
+                var g = new BarButton { Group = true, Icon = "E8B7", Label = GroupNameFor(buttons.Select(b => b.Target).ToArray()), Children = buttons };
                 S.Buttons.Insert(at, g);
                 CommitButtons();
                 ShowNotice("success", $"Contenitore «{g.Label}» con {buttons.Count} elementi.", "Clic destro sul tasto per modificarlo.", "Rinomina…", () =>
@@ -971,6 +1027,7 @@ namespace WinTools.UI
         {
             try
             {
+                if (files.Any(f => !Path.IsPathRooted(f))) return "Gruppo";   // elementi della shell senza percorso
                 var dirs = files.Select(f => Path.GetDirectoryName(f.TrimEnd('\\')) ?? "").Distinct(StringComparer.OrdinalIgnoreCase).ToList();
                 if (dirs.Count == 1 && dirs[0] != "")
                 {
@@ -1011,8 +1068,12 @@ namespace WinTools.UI
             else
             {
                 m.Items.Add(Menu("Apri", "", () => Tools.Launch(b)));
-                m.Items.Add(Menu("Apri come amministratore", "", () => Tools.Open(b.Target, b.Arguments, b.WorkingDir, true)));
-                m.Items.Add(Menu("Apri il percorso del file", "", () => Reveal(b)));
+                if (!IsShellTarget(b))
+                {
+                    m.Items.Add(Menu("Apri come amministratore", "", () => Tools.Open(b.Target, b.Arguments, b.WorkingDir, true)));
+                    m.Items.Add(Menu("Apri il percorso del file", "", () => Reveal(b)));
+                }
+                AddTargetItems(m.Items, b);
                 m.Items.Add(new Separator());
                 m.Items.Add(MoveToMenu(b));
                 m.Items.Add(Menu("Modifica…", "", () => EditButton(b)));
@@ -1033,6 +1094,36 @@ namespace WinTools.UI
             btn.ContextMenu.Items.Add(Menu("Aggiungi un tasto…", "", () => AddButton(false)));
             btn.ContextMenu.Items.Add(Menu("Aggiungi un contenitore…", "", () => AddButton(true)));
             btn.ContextMenu.Items.Add(Menu("Aggiungi un separatore", "", () => AddSeparatorAfter(null)));
+        }
+
+        const string ClsidThisPc = "{20D04FE0-3AEA-1069-A2D8-08002B30309D}", ClsidNetwork = "{F02C1A0D-BE21-4350-88B0-7367FC96EF3C}", ClsidRecycleBin = "{645FF040-5081-101B-9F08-00AA002F954E}";
+
+        static bool IsShellTarget(BarButton b) => (b.Target ?? "").TrimStart().StartsWith("shell:::", StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Voci «Gestione» e «Proprietà» come nel menu di Esplora file: per Questo PC (Gestione computer, Sistema), Rete
+        /// (Connessioni di rete, Centro connessioni), Cestino (Svuota, Proprietà) e in genere per ogni percorso.
+        /// </summary>
+        void AddTargetItems(ItemCollection items, BarButton b)
+        {
+            string t = (b.Target ?? "").Trim();
+            if (t == "") return;
+            Action after = () => { GroupPopup.IsOpen = false; if (!S.Pinned) HideBar(); };
+            if (IsShellTarget(b))
+            {
+                string clsid = t.Substring("shell:::".Length).ToUpperInvariant();
+                if (clsid.StartsWith(ClsidThisPc))
+                    items.Add(Menu("Gestione", "", () => { if (!Native.ShellVerb(t, "manage")) Tools.Open("compmgmt.msc"); after(); }));
+                else if (clsid.StartsWith(ClsidNetwork))
+                    items.Add(Menu("Connessioni di rete", "", () => { Tools.Open("ncpa.cpl"); after(); }));
+                else if (clsid.StartsWith(ClsidRecycleBin))
+                    items.Add(Menu("Svuota il Cestino", "", () => { after(); Tools.EmptyRecycleBin(); }));
+                items.Add(Menu("Proprietà", "", () => { Tools.ShellVerb(t, "properties"); after(); }));
+                return;
+            }
+            string path = Environment.ExpandEnvironmentVariables(t);
+            if (Path.IsPathRooted(path) && (File.Exists(path) || Directory.Exists(path)))
+                items.Add(Menu("Proprietà", "", () => { Tools.ShowProperties(path); after(); }));
         }
 
         /// <summary>Un separatore subito dopo il tasto indicato (nello stesso elenco), oppure in fondo alla barra.</summary>
@@ -1086,6 +1177,18 @@ namespace WinTools.UI
             string t = Environment.ExpandEnvironmentVariables(b.Target);
             if (!Path.IsPathRooted(t)) t = IconCache.FindOnPath(t) ?? t;
             Tools.RevealInExplorer(t);
+        }
+
+        /// <summary>Breve descrizione del separatore (vuota = linea semplice).</summary>
+        void EditSeparator(BarButton b)
+        {
+            GroupPopup.IsOpen = false;
+            var w = new TextPromptWindow("Separatore", "Breve descrizione mostrata accanto alla linea (lascia vuoto per una linea semplice).", b.Label ?? "");
+            if (RunDialog(() => w))
+            {
+                b.Label = (w.Value ?? "").Trim();
+                CommitButtons();
+            }
         }
 
         void EditButton(BarButton b)
@@ -1162,6 +1265,45 @@ namespace WinTools.UI
             GroupPopup.IsOpen = true;
         }
 
+        /// <summary>Dopo la ricostruzione dei tasti, lega il popup del contenitore aperto al suo nuovo elemento visivo.</summary>
+        void ReanchorGroupPopup()
+        {
+            var btn = FindBarButtonElement(_openGroup.Id);
+            if (btn == null) { GroupPopup.IsOpen = false; return; }
+            if (!ReferenceEquals(GroupPopup.PlacementTarget, btn))
+            {
+                GroupPopup.PlacementTarget = btn;
+                // Un cambio di offset forza il popup aperto a ricalcolare la posizione
+                GroupPopup.HorizontalOffset += 1; GroupPopup.HorizontalOffset -= 1;
+            }
+        }
+
+        /// <summary>L'elemento Button della barra che mostra il tasto con quell'Id (null se non c'è).</summary>
+        Button FindBarButtonElement(string id)
+        {
+            ButtonsList.UpdateLayout();
+            foreach (var item in ButtonsList.Items)
+            {
+                var vm = item as ButtonVm;
+                if (vm == null || vm.Button.Id != id) continue;
+                var container = ButtonsList.ItemContainerGenerator.ContainerFromItem(item) as DependencyObject;
+                return container == null ? null : FirstDescendant<Button>(container);
+            }
+            return null;
+        }
+
+        static T FirstDescendant<T>(DependencyObject d) where T : DependencyObject
+        {
+            if (d is T t) return t;
+            int n = VisualTreeHelper.GetChildrenCount(d);
+            for (int i = 0; i < n; i++)
+            {
+                var r = FirstDescendant<T>(VisualTreeHelper.GetChild(d, i));
+                if (r != null) return r;
+            }
+            return null;
+        }
+
         void RefreshGroupItems()
         {
             _groupItems.Clear();
@@ -1197,12 +1339,14 @@ namespace WinTools.UI
             m.Items.Clear();
             if (b.Separator)
             {
+                m.Items.Add(Menu("Descrizione…", "", () => EditSeparator(b)));
                 m.Items.Add(MoveToMenu(b));
                 m.Items.Add(Menu("Rimuovi il separatore", "", () => { S.DetachButton(b.Id); CommitButtons(); }));
                 return;
             }
             m.Items.Add(Menu("Apri", "", () => { GroupPopup.IsOpen = false; Tools.Launch(b); if (!S.Pinned) HideBar(); }));
-            m.Items.Add(Menu("Apri come amministratore", "", () => Tools.Open(b.Target, b.Arguments, b.WorkingDir, true)));
+            if (!IsShellTarget(b)) m.Items.Add(Menu("Apri come amministratore", "", () => Tools.Open(b.Target, b.Arguments, b.WorkingDir, true)));
+            AddTargetItems(m.Items, b);
             m.Items.Add(new Separator());
             m.Items.Add(MoveToMenu(b));
             m.Items.Add(Menu("Modifica…", "", () => EditButton(b)));
@@ -1213,17 +1357,19 @@ namespace WinTools.UI
 
         void GroupPopup_DragOver(object sender, DragEventArgs e)
         {
-            e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
+            e.Effects = DropEffectFor(e);
             e.Handled = true;
         }
 
-        /// <summary>File da Esplora file rilasciati nel menu aperto: diventano tasti di quel contenitore.</summary>
+        /// <summary>File (o elementi della shell) rilasciati nel menu aperto: diventano tasti di quel contenitore.</summary>
         void GroupPopup_Drop(object sender, DragEventArgs e)
         {
             e.Handled = true;
-            if (_openGroup == null || !e.Data.GetDataPresent(DataFormats.FileDrop)) return;
-            foreach (var f in (e.Data.GetData(DataFormats.FileDrop) as string[]) ?? new string[0])
-                _openGroup.Children.Add(ButtonForPath(f));
+            e.Effects = DropEffectFor(e);
+            if (_openGroup == null || e.Effects == DragDropEffects.None) return;
+            var buttons = DroppedButtons(e.Data);
+            if (buttons.Count == 0) return;
+            _openGroup.Children.AddRange(buttons);
             CommitButtons();
         }
 

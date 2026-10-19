@@ -40,6 +40,11 @@
     <SolidColorBrush x:Key="DialogFooterFill" Color="#212121"/>
     <SolidColorBrush x:Key="Scrim" Color="#66000000"/>
     <SolidColorBrush x:Key="Divider" Color="#14FFFFFF"/>
+    <!-- separatori dei tasti (barra e menu dei contenitori): più marcati del Divider, che sul pannello scuro quasi non si vede -->
+    <SolidColorBrush x:Key="SeparatorLine" Color="#4DFFFFFF"/>
+    <!-- firma «incisa»: testo scuro e riflesso chiaro -->
+    <SolidColorBrush x:Key="EngravedText" Color="#FF121212"/>
+    <SolidColorBrush x:Key="EngravedLight" Color="#40FFFFFF"/>
     <SolidColorBrush x:Key="SuccessText" Color="#6CCB5F"/>
     <SolidColorBrush x:Key="SuccessFill" Color="#393D1B"/>
     <SolidColorBrush x:Key="WarnText" Color="#FCE100"/>

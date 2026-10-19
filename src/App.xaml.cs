@@ -179,13 +179,17 @@ namespace WinTools
             var b = screen.Bounds;
             bool onEdge = Settings.Edge == "bottom" ? p.Y >= b.Bottom - 1 : p.Y <= b.Top;
             if (!onEdge) { _edgeSince = DateTime.MinValue; return; }
+            // Con un tasto del mouse premuto si sta probabilmente trascinando qualcosa (file dal desktop, una finestra):
+            // la barra compare lo stesso, ma dopo una sosta più lunga sul bordo e senza prendere il fuoco, così ci si
+            // può rilasciare sopra ciò che si trascina. Prima non compariva affatto e il rilascio finiva nel vuoto.
+            bool dragging = Forms.Control.MouseButtons != Forms.MouseButtons.None;
+            int delay = dragging ? Math.Max(Settings.EdgeDelayMs, 700) : Settings.EdgeDelayMs;
             if (_edgeSince == DateTime.MinValue) _edgeSince = DateTime.Now;
-            else if ((DateTime.Now - _edgeSince).TotalMilliseconds >= Settings.EdgeDelayMs)
+            else if ((DateTime.Now - _edgeSince).TotalMilliseconds >= delay)
             {
                 _edgeSince = DateTime.MinValue;
-                // Non durante un trascinamento o con un tasto premuto (si sta lavorando sul bordo)
-                if (Forms.Control.MouseButtons != Forms.MouseButtons.None) return;
-                Bar.ShowFromEdge(screen);
+                if (dragging) Bar.ShowBar(false, screen);
+                else Bar.ShowFromEdge(screen);
             }
         }
 

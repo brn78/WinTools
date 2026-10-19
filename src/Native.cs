@@ -215,6 +215,54 @@ namespace WinTools
 
         const int SIIGBF_RESIZETOFIT = 0x00, SIIGBF_BIGGERSIZEOK = 0x01, SIIGBF_ICONONLY = 0x04;
 
+        // ---- elementi della shell trascinati (formato «Shell IDList Array»: Questo PC, Rete, Cestino… non hanno un percorso)
+        [DllImport("shell32.dll")] static extern IntPtr ILCombine(IntPtr pidl1, IntPtr pidl2);
+        [DllImport("shell32.dll")] static extern void ILFree(IntPtr pidl);
+        [DllImport("shell32.dll")] static extern int SHGetNameFromIDList(IntPtr pidl, int sigdn, out IntPtr ppszName);
+        const int SIGDN_NORMALDISPLAY = 0;
+        const int SIGDN_DESKTOPABSOLUTEPARSING = unchecked((int)0x80028000);
+
+        /// <summary>
+        /// Legge la struttura CIDA del formato «Shell IDList Array» e restituisce, per ogni elemento, il nome di
+        /// analisi assoluto (un percorso, oppure «::{CLSID}» per le cartelle virtuali) e il nome visualizzato.
+        /// </summary>
+        public static System.Collections.Generic.List<Tuple<string, string>> ShellItemsFromIdList(byte[] cida)
+        {
+            var list = new System.Collections.Generic.List<Tuple<string, string>>();
+            if (cida == null || cida.Length < 8) return list;
+            int count = BitConverter.ToInt32(cida, 0);
+            if (count <= 0 || 4 + 4 * (count + 1) > cida.Length) return list;
+            var h = GCHandle.Alloc(cida, GCHandleType.Pinned);
+            try
+            {
+                IntPtr p = h.AddrOfPinnedObject();
+                IntPtr parent = p + BitConverter.ToInt32(cida, 4);   // il primo spiazzamento è la cartella che li contiene
+                for (int i = 1; i <= count; i++)
+                {
+                    IntPtr child = p + BitConverter.ToInt32(cida, 4 + 4 * i);
+                    IntPtr abs = ILCombine(parent, child);
+                    if (abs == IntPtr.Zero) continue;
+                    try
+                    {
+                        string parsing = NameFromIdList(abs, SIGDN_DESKTOPABSOLUTEPARSING);
+                        string display = NameFromIdList(abs, SIGDN_NORMALDISPLAY);
+                        if (!string.IsNullOrEmpty(parsing)) list.Add(Tuple.Create(parsing, string.IsNullOrEmpty(display) ? parsing : display));
+                    }
+                    finally { ILFree(abs); }
+                }
+            }
+            catch { }
+            finally { h.Free(); }
+            return list;
+        }
+
+        static string NameFromIdList(IntPtr pidl, int sigdn)
+        {
+            IntPtr s;
+            if (SHGetNameFromIDList(pidl, sigdn, out s) != 0 || s == IntPtr.Zero) return null;
+            try { return Marshal.PtrToStringUni(s); } finally { Marshal.FreeCoTaskMem(s); }
+        }
+
         /// <summary>
         /// Icona di un file, cartella, collegamento o app (anche «shell:AppsFolder\…») alla dimensione chiesta, in pixel.
         /// null se la shell non la fornisce.
@@ -308,9 +356,41 @@ namespace WinTools
         const uint SEE_MASK_INVOKEIDLIST = 0x0000000C;
         const uint SEE_MASK_FLAG_NO_UI = 0x00000400;
 
+        [DllImport("shell32.dll", CharSet = CharSet.Unicode)] static extern int SHParseDisplayName(string name, IntPtr bc, out IntPtr pidl, uint sfgaoIn, out uint sfgaoOut);
+        [DllImport("shell32.dll", CharSet = CharSet.Unicode)] static extern int SHEmptyRecycleBin(IntPtr hwnd, string root, uint flags);
+
+        /// <summary>
+        /// Esegue un verbo del menu contestuale della shell («properties», «manage»…) su un percorso o su un elemento
+        /// virtuale («shell:::{CLSID}» oppure «::{CLSID}»: Questo PC, Rete, Cestino), come farebbe Esplora file.
+        /// </summary>
+        public static bool ShellVerb(string target, string verb)
+        {
+            string name = (target ?? "").Trim();
+            if (name.StartsWith("shell:::", StringComparison.OrdinalIgnoreCase)) name = name.Substring("shell:".Length);
+            else name = Environment.ExpandEnvironmentVariables(name);
+            IntPtr pidl = IntPtr.Zero;
+            try
+            {
+                uint attr;
+                if (SHParseDisplayName(name, IntPtr.Zero, out pidl, 0, out attr) != 0 || pidl == IntPtr.Zero) return false;
+                var info = new SHELLEXECUTEINFO
+                {
+                    cbSize = Marshal.SizeOf(typeof(SHELLEXECUTEINFO)),
+                    fMask = SEE_MASK_INVOKEIDLIST | SEE_MASK_FLAG_NO_UI,
+                    lpVerb = verb,
+                    lpIDList = pidl,
+                    nShow = 5
+                };
+                return ShellExecuteEx(ref info);
+            }
+            catch { return false; }
+            finally { if (pidl != IntPtr.Zero) ILFree(pidl); }
+        }
+
         /// <summary>Apre la finestra Proprietà di un file o di una cartella (il verbo «properties» della shell).</summary>
         public static bool ShowProperties(string path)
         {
+            if (ShellVerb(path, "properties")) return true;
             try
             {
                 var info = new SHELLEXECUTEINFO
@@ -324,6 +404,12 @@ namespace WinTools
                 return ShellExecuteEx(ref info);
             }
             catch { return false; }
+        }
+
+        /// <summary>Svuota il Cestino con la conferma di Windows.</summary>
+        public static bool EmptyRecycleBin()
+        {
+            try { return SHEmptyRecycleBin(IntPtr.Zero, null, 0) == 0; } catch { return false; }
         }
 
         // ------------------------------------------------------------------ messaggi di Windows
