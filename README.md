@@ -2,11 +2,16 @@
 
 **WinTools** è una barra che compare quando porti il mouse sul bordo dello schermo (o con un tasto rapido): dentro ci sono i **tasti personalizzabili** per i programmi, le cartelle e gli strumenti che usi ogni giorno e una **ricerca istantanea** di file, cartelle e app. Interfaccia in **stile Windows 11** (Fluent: tema chiaro/scuro automatico, colore di accento di sistema, Mica nelle finestre), come [WinOptima](https://github.com/brn78/WinOptima).
 
-**[⬇ Scarica WinTools.exe](https://github.com/brn78/WinTools/releases/latest/download/WinTools.exe)** · **[Pagina del progetto](https://brn78.github.io/WinTools/)**
+**[⬇ Scarica il setup (WinTools-Setup.exe)](https://github.com/brn78/WinTools/releases/latest/download/WinTools-Setup.exe)** · [Versione portatile (WinTools.exe)](https://github.com/brn78/WinTools/releases/latest/download/WinTools.exe) · **[Pagina del progetto](https://brn78.github.io/WinTools/)**
 
-> Windows potrebbe mostrare «Windows ha protetto il PC»: l'exe non è firmato digitalmente. Clicca **Ulteriori informazioni → Esegui comunque**.
+> Windows potrebbe mostrare «Windows ha protetto il PC»: setup ed exe non sono firmati digitalmente. Clicca **Ulteriori informazioni → Esegui comunque**.
 
-Non richiede installazione né dipendenze: **`WinTools.exe` è un unico file da circa 320 KB** (usa .NET Framework 4.8, già incluso in Windows 10 e 11). Copialo in una cartella stabile (es. `C:\Strumenti`) e avvialo: niente permessi di amministratore.
+Nessuna dipendenza (usa .NET Framework 4.8, già incluso in Windows 10 e 11) e niente permessi di amministratore in nessuno dei due casi:
+
+* **Setup** (consigliato): installa per l'utente corrente in `%LOCALAPPDATA%\Programs\WinTools`, crea il collegamento nel menu Start (e sul desktop se vuoi), imposta l'avvio con Windows e avvia la barra. Si disinstalla da *App installate*; alla disinstallazione chiede se eliminare anche impostazioni e indice.
+* **Portatile**: `WinTools.exe` è un unico file da circa 340 KB. Copialo in una cartella stabile (es. `C:\Strumenti`) e avvialo; l'avvio con Windows punta a quella cartella.
+
+In entrambi i casi l'aggiornamento automatico sostituisce l'exe sul posto.
 
 ---
 
@@ -17,6 +22,10 @@ Non richiede installazione né dipendenze: **`WinTools.exe` è un unico file da 
 * **Tasti**: clic per aprire, **trascina** per riordinare, tasto destro per modificare o rimuovere, **+** per aggiungerne uno. **Trascina un file o una cartella sulla barra** e diventa un tasto. Un **contenitore** raccoglie più tasti in un menu: trascinaci sopra i tasti che vuoi.
 * **Spillo**: blocca la barra sempre visibile. **Ingranaggio**: impostazioni.
 * **Area di notifica**: clic sinistro mostra la barra, clic destro apre il menu (blocca, impostazioni, aggiorna l'indice, avvio con Windows, aggiornamenti, esci).
+
+## 🆕 Versione 1.2.0
+* **Setup di installazione** (`WinTools-Setup.exe`, Inno Setup): installazione per utente senza amministratore in `%LOCALAPPDATA%\Programs\WinTools`, collegamento nel menu Start, icona sul desktop a scelta, avvio con Windows (spuntato) e avvio al termine. Chiude da solo la barra in esecuzione prima di aggiornare i file. La disinstallazione toglie la voce di avvio e chiede se eliminare anche impostazioni e indice. L'exe portatile resta disponibile.
+* `Build.ps1` compila anche il setup se trova Inno Setup; `Publish.ps1` allega entrambi i file alla release.
 
 ## 🆕 Versione 1.1.3
 * **Correzione**: le icone di file e cartelle nei risultati (e dei tasti con icona del file) erano capovolte.
@@ -66,9 +75,11 @@ Non richiede installazione né dipendenze: **`WinTools.exe` è un unico file da 
 
 | File | Scopo |
 |---|---|
-| `WinTools.exe` | **L'unico file da distribuire**: si genera con `Build.ps1` e si pubblica solo nelle [release](https://github.com/brn78/WinTools/releases) |
-| `Publish.ps1` | Crea la release su GitHub con l'exe e tiene solo le ultime 2 |
-| `Build.ps1` | Disegna l'icona (WPF → .ico multi-risoluzione) e compila con `dotnet build` |
+| `WinTools.exe` | **L'app in un solo file** (portatile; è anche quello che l'aggiornamento automatico scarica): si genera con `Build.ps1` e si pubblica solo nelle [release](https://github.com/brn78/WinTools/releases) |
+| `WinTools-Setup.exe` | **Il setup** (installazione per utente), generato da `Build.ps1` con Inno Setup e pubblicato nelle release |
+| `Setup.iss` | Script Inno Setup: cartella, collegamenti, avvio con Windows, chiusura dell'app in esecuzione, pulizia alla disinstallazione |
+| `Publish.ps1` | Crea la release su GitHub con exe e setup e tiene solo le ultime 2 |
+| `Build.ps1` | Disegna l'icona (WPF → .ico multi-risoluzione), compila con `dotnet build` e, se c'è Inno Setup, il setup |
 | `WinTools.csproj`, `app.manifest` | Progetto (.NET Framework 4.8, WPF) e manifest (DPI per monitor, nessuna elevazione) |
 | `src/` | Sorgenti C#: `App` (tray, tasto rapido, bordo), `UI/BarWindow` (la barra), `UI/SettingsWindow`, `UI/ButtonEditorWindow`, `UI/Presets` (strumenti di Windows e glifi), `Search/FileIndex` (indice), `Search/AppCatalog` (app del menu Start), `Search/SearchText` e `Scoring` (normalizzazione e pertinenza), `Updater`, `Settings`, `Theme`, `Native` |
 | `docs/` | Pagina del progetto (GitHub Pages) |
@@ -77,7 +88,7 @@ In `%LOCALAPPDATA%\WinTools` l'app crea `WinTools.settings.json` (preferenze e t
 
 ### Compilare
 
-Serve l'[SDK .NET](https://dotnet.microsoft.com/download) (qualunque versione recente): il targeting pack di .NET Framework 4.8 lo scarica da solo se manca.
+Serve l'[SDK .NET](https://dotnet.microsoft.com/download) (qualunque versione recente): il targeting pack di .NET Framework 4.8 lo scarica da solo se manca. Per il setup serve [Inno Setup](https://jrsoftware.org/isinfo.php) 6 o 7 (facoltativo: senza, `Build.ps1` produce solo l'exe portatile).
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\Build.ps1

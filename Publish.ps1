@@ -4,7 +4,8 @@
 .DESCRIPTION
     1. Legge la versione da <Version> in WinTools.csproj (es. 1.2 -> tag v1.2).
     2. Ricostruisce icona ed exe con Build.ps1.
-    3. Crea la release su GitHub allegando WinTools.exe: l'aggiornamento automatico dell'app la troverà.
+    3. Crea la release su GitHub allegando WinTools.exe (portatile; è quello che l'aggiornamento automatico
+       scarica) e WinTools-Setup.exe (installazione), se Inno Setup l'ha prodotto.
     4. Elimina le release più vecchie, tenendo solo le ultime $Keep (con i rispettivi tag).
     Prima di lanciarlo: aumenta la versione in WinTools.csproj, fai commit e push.
 .EXAMPLE
@@ -35,11 +36,13 @@ Write-Host "Pubblicazione di WinTools $tag" -ForegroundColor Cyan
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $root 'Build.ps1')
 if ($LASTEXITCODE -ne 0) { throw 'Build non riuscita.' }
 
-if (-not $Notes) { $Notes = "WinTools $ver. Scarica **WinTools.exe** (unico file portatile). Le copie già in uso si aggiornano da sole." }
+$assets = @((Join-Path $root 'WinTools.exe'))
+if (Test-Path (Join-Path $root 'WinTools-Setup.exe')) { $assets += (Join-Path $root 'WinTools-Setup.exe') }
+if (-not $Notes) { $Notes = "WinTools $ver. Scarica **WinTools-Setup.exe** (installazione per utente, senza amministratore) oppure **WinTools.exe** (unico file portatile). Le copie già in uso si aggiornano da sole." }
 if ($WhatIf) {
-    Write-Host "[WhatIf] gh release create $tag WinTools.exe" -ForegroundColor Yellow
+    Write-Host "[WhatIf] gh release create $tag $($assets -join ' ')" -ForegroundColor Yellow
 } else {
-    gh release create $tag (Join-Path $root 'WinTools.exe') --title "WinTools $ver" --notes $Notes --target (git rev-parse HEAD)
+    gh release create $tag @assets --title "WinTools $ver" --notes $Notes --target (git rev-parse HEAD)
     if ($LASTEXITCODE -ne 0) { throw 'Creazione della release non riuscita.' }
 }
 

@@ -8,8 +8,9 @@ WinTools-error.log
 index.bin
 *.old.exe
 
-# L'exe si pubblica solo come asset delle release (ne restano al massimo 2)
+# Exe e setup si pubblicano solo come asset delle release (ne restano al massimo 2)
 WinTools.exe
+WinTools-Setup.exe
 
 # IDE
 .vs/
