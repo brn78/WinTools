@@ -23,6 +23,10 @@ In entrambi i casi l'aggiornamento automatico sostituisce l'exe sul posto.
 * **Spillo**: blocca la barra sempre visibile. **Ingranaggio**: impostazioni.
 * **Area di notifica**: clic sinistro mostra la barra, clic destro apre il menu (blocca, impostazioni, aggiorna l'indice, avvio con Windows, aggiornamenti, esci).
 
+## 🆕 Versione 1.6.2
+* **«Riavvia e aggiorna» riparte davvero**: la nuova versione veniva avviata mentre la vecchia stava ancora chiudendo, la trovava «già in esecuzione» e si chiudeva da sola. Ora la vecchia lascia il posto prima di avviarla e la nuova, se serve, aspetta che termini.
+* **La barra si ritira sempre** dopo una comparsa dal bordo col cursore nella ricerca: se non scrivi né clicchi, allontanando il mouse sparisce come con l'opzione spenta (prima, avendo il fuoco, restava finché non si cliccava altrove).
+
 ## 🆕 Versione 1.6.1
 * Nella riga informazioni accanto all'indirizzo IPv4 si legge se arriva dal **DHCP** o è **statico** (anche nel suggerimento e nell'elenco con più indirizzi); a destra la firma dell'autore.
 * Il pulsante dei filtri risponde sempre al clic: prima, se la casella di ricerca non aveva già il fuoco, il clic si perdeva. Il pannello si chiude con un altro clic sul pulsante, un clic altrove nella barra o Esc.
