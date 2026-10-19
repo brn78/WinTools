@@ -182,6 +182,7 @@ namespace WinTools.UI
             GroupList.ItemsSource = _groupItems;
             ResultsList.ItemsSource = _results;
             SetupInfoStrip();
+            SetupFilters();
             _searchTimer.Tick += (s, e) => { _searchTimer.Stop(); RunSearch(); };
             _noticeTimer.Tick += (s, e) => { _noticeTimer.Stop(); HideNotice(); };
             Deactivated += (s, e) =>
@@ -421,6 +422,108 @@ namespace WinTools.UI
 
         void NoticeAction_Click(object sender, RoutedEventArgs e) { var a = _noticeAction; HideNotice(); a?.Invoke(); }
         void NoticeClose_Click(object sender, RoutedEventArgs e) { _noticeTimer.Stop(); HideNotice(); }
+
+        // ------------------------------------------------------------------ filtri della ricerca
+        bool _filterLoading;
+        readonly DispatcherTimer _filterExtTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
+
+        void SetupFilters()
+        {
+            _filterExtTimer.Tick += (s, e) => { _filterExtTimer.Stop(); Filter_Changed(null, null); };
+            UpdateFilterGlyph();
+        }
+
+        /// <summary>L'icona dei filtri prende il colore di accento quando ce n'è almeno uno attivo.</summary>
+        void UpdateFilterGlyph()
+        {
+            bool active = S.Filter.IsActive;
+            FilterGlyph.SetResourceReference(TextBlock.ForegroundProperty, active ? "Accent" : "TextSecondary");
+            FilterGlyph.Text = active ? "" : "";   // filtro pieno / filtro vuoto
+            FilterButton.ToolTip = active ? "Filtri attivi: " + S.Filter.Describe() + "\nClic: modifica o azzera" : "Filtri: tipo, estensioni, data";
+        }
+
+        void LoadFilterControls()
+        {
+            _filterLoading = true;
+            var f = S.Filter;
+            FilterKindAll.IsChecked = f.Kind == "all";
+            FilterKindFolders.IsChecked = f.Kind == "folders";
+            FilterKindFiles.IsChecked = f.Kind == "files";
+            FilterExt.Text = f.Ext ?? "";
+            foreach (ComboBoxItem i in FilterSince.Items) if ((string)i.Tag == f.SinceDays.ToString()) FilterSince.SelectedItem = i;
+            if (FilterSince.SelectedItem == null) FilterSince.SelectedIndex = 0;
+            FilterNameOnly.IsChecked = f.NameOnly;
+            _filterLoading = false;
+        }
+
+        void FilterButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (FilterPopup.IsOpen) { FilterPopup.IsOpen = false; return; }
+            LoadFilterControls();
+            FilterPopup.PlacementTarget = FilterButton;
+            FilterPopup.IsOpen = true;
+        }
+
+        void FilterPopup_Opened(object sender, EventArgs e) { KeepOpen = true; }
+        void FilterPopup_Closed(object sender, EventArgs e) { KeepOpen = IsActive && (SearchBox.IsKeyboardFocusWithin || SearchBox.Text.Length > 0); SearchBox.Focus(); }
+
+        void FilterExt_Changed(object sender, TextChangedEventArgs e) { if (_filterLoading) return; _filterExtTimer.Stop(); _filterExtTimer.Start(); }
+
+        /// <summary>Un filtro è cambiato: si salva, l'icona si aggiorna e la ricerca riparte.</summary>
+        void Filter_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_filterLoading || FilterKindAll == null) return;
+            var f = S.Filter;
+            f.Kind = FilterKindFolders.IsChecked == true ? "folders" : FilterKindFiles.IsChecked == true ? "files" : "all";
+            f.Ext = FilterExt.Text.Trim();
+            int days; int.TryParse((FilterSince.SelectedItem as ComboBoxItem)?.Tag as string ?? "0", out days);
+            f.SinceDays = days;
+            f.NameOnly = FilterNameOnly.IsChecked == true;
+            App.Current.SaveSettings();
+            UpdateFilterGlyph();
+            if (SearchBox.Text.Trim().Length > 0) RunSearch();
+        }
+
+        void FilterClear_Click(object sender, RoutedEventArgs e)
+        {
+            S.Filter.Clear();
+            App.Current.SaveSettings();
+            LoadFilterControls();
+            UpdateFilterGlyph();
+            if (SearchBox.Text.Trim().Length > 0) RunSearch();
+        }
+
+        void FilterClose_Click(object sender, RoutedEventArgs e) { FilterPopup.IsOpen = false; }
+
+        /// <summary>Applica i filtri attivi ai risultati (le app restano solo senza filtri su tipo, estensione o data).</summary>
+        static List<SearchHit> ApplyFilter(List<SearchHit> hits, SearchFilter f, List<string> words)
+        {
+            if (!f.IsActive) return hits;
+            var ext = f.Extensions();
+            bool kindOrExt = f.Kind != "all" || ext.Count > 0;
+            DateTime since = f.SinceDays > 0 ? DateTime.Now.Date.AddDays(-(f.SinceDays - 1)) : DateTime.MinValue;
+            var result = new List<SearchHit>();
+            foreach (var h in hits)
+            {
+                if (h.Kind == HitKind.App) { if (kindOrExt || f.SinceDays > 0) continue; }
+                if (f.Kind == "folders" && h.Kind != HitKind.Folder) continue;
+                if (f.Kind == "files" && h.Kind != HitKind.File) continue;
+                if (ext.Count > 0)
+                {
+                    if (h.Kind != HitKind.File) continue;
+                    string e = Path.GetExtension(h.Title ?? "").TrimStart('.').ToLowerInvariant();
+                    if (!ext.Contains(e)) continue;
+                }
+                if (f.SinceDays > 0 && h.Kind != HitKind.App && h.Modified < since) continue;
+                if (f.NameOnly && h.Kind != HitKind.App)
+                {
+                    string name = SearchText.Fold(h.Title ?? "");
+                    if (words.Any(w => name.IndexOf(w, StringComparison.Ordinal) < 0)) continue;
+                }
+                result.Add(h);
+            }
+            return result;
+        }
 
         // ------------------------------------------------------------------ riga informazioni (CPU, RAM, rete, IPv4, COM)
         readonly SystemStats _stats = new SystemStats();
@@ -1173,15 +1276,19 @@ namespace WinTools.UI
             var index = App.Current.Index;
             var apps = App.Current.Apps;
             bool searchApps = S.Index.Apps;
+            // Con i filtri attivi si chiede di più all'indice: dopo il filtro deve restare abbastanza
+            var filter = new SearchFilter { Kind = S.Filter.Kind, Ext = S.Filter.Ext, SinceDays = S.Filter.SinceDays, NameOnly = S.Filter.NameOnly };
+            int want = filter.IsActive ? 400 : 40;
             Task.Run(() =>
             {
                 var hits = new List<SearchHit>();
                 try
                 {
                     if (searchApps) hits.AddRange(apps.Search(words, usage));
-                    hits.AddRange(index.Search(words, 40, usage));
+                    hits.AddRange(index.Search(words, want, usage));
                 }
                 catch (Exception ex) { Program.LogError("Ricerca", ex); }
+                hits = ApplyFilter(hits, filter, words);
                 var top = hits.OrderByDescending(h => h.Score).ThenByDescending(h => h.Modified).Take(12).ToList();
                 string suggestion = null;
                 if (top.Count < 2)
@@ -1209,7 +1316,7 @@ namespace WinTools.UI
                 SetResults(list, true);
                 // Il bordo della casella dice com'è andata: verde se c'è qualcosa, rosso se non c'è niente (restano solo «Esegui» e «Cerca sul web»)
                 SetSearchBorder(list.Any(h => h.Kind != HitKind.Command) ? "SuccessText" : "ErrorText");
-                HintText.Text = "↑↓ scegli · Invio apri · Ctrl+Invio apri la cartella · Esc chiudi";
+                HintText.Text = filter.IsActive ? "Filtri: " + filter.Describe() + " · Invio apri · Esc chiudi" : "↑↓ scegli · Invio apri · Ctrl+Invio apri la cartella · Esc chiudi";
                 UpdateStatus();
             }, TaskScheduler.FromCurrentSynchronizationContext());
         }

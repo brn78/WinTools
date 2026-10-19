@@ -67,6 +67,39 @@ namespace WinTools
         }
     }
 
+    /// <summary>Filtri della ricerca (restano attivi finché non si azzerano): tipo, estensioni, data, parole solo nel nome.</summary>
+    public class SearchFilter
+    {
+        /// <summary>all, folders oppure files.</summary>
+        public string Kind { get; set; } = "all";
+        /// <summary>Estensioni separate da virgole o spazi (pdf, docx…); vuoto = tutte.</summary>
+        public string Ext { get; set; } = "";
+        /// <summary>Modificati negli ultimi N giorni; 0 = qualsiasi data.</summary>
+        public int SinceDays { get; set; }
+        /// <summary>Tutte le parole nel nome (non nel percorso).</summary>
+        public bool NameOnly { get; set; }
+
+        public bool IsActive => Kind != "all" || !string.IsNullOrWhiteSpace(Ext) || SinceDays > 0 || NameOnly;
+
+        public List<string> Extensions()
+        {
+            return (Ext ?? "").Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries).Select(e => e.Trim().TrimStart('.', '*').ToLowerInvariant()).Where(e => e != "").Distinct().ToList();
+        }
+
+        public void Clear() { Kind = "all"; Ext = ""; SinceDays = 0; NameOnly = false; }
+
+        public string Describe()
+        {
+            var parts = new List<string>();
+            if (Kind == "folders") parts.Add("solo cartelle"); else if (Kind == "files") parts.Add("solo file");
+            var ext = Extensions();
+            if (ext.Count > 0) parts.Add(string.Join(", ", ext));
+            if (SinceDays == 1) parts.Add("oggi"); else if (SinceDays > 0) parts.Add($"ultimi {SinceDays} giorni");
+            if (NameOnly) parts.Add("parole nel nome");
+            return string.Join(" · ", parts);
+        }
+    }
+
     /// <summary>Tutte le preferenze dell'app, salvate in %LOCALAPPDATA%\WinTools\WinTools.settings.json.</summary>
     public class AppSettings
     {
@@ -101,6 +134,7 @@ namespace WinTools
         public bool FirstRunDone { get; set; }
         public List<BarButton> Buttons { get; set; } = new List<BarButton>();
         public IndexSettings Index { get; set; } = new IndexSettings();
+        public SearchFilter Filter { get; set; } = new SearchFilter();
         /// <summary>Ultime ricerche aperte (percorsi), per i suggerimenti con la casella vuota.</summary>
         public List<string> Recent { get; set; } = new List<string>();
         /// <summary>Quante volte ogni percorso è stato aperto dai risultati: i preferiti salgono.</summary>
@@ -165,6 +199,9 @@ namespace WinTools
             if (Index == null) Index = new IndexSettings();
             if (Index.Roots == null) Index.Roots = new List<string>();
             if (Index.Exclude == null) Index.Exclude = IndexSettings.DefaultExcludes();
+            if (Filter == null) Filter = new SearchFilter();
+            if (Filter.Kind != "folders" && Filter.Kind != "files") Filter.Kind = "all";
+            if (Filter.Ext == null) Filter.Ext = "";
             if (Recent == null) Recent = new List<string>();
             if (Usage == null) Usage = new Dictionary<string, int>();
             if (Theme != "dark" && Theme != "light") Theme = "system";
