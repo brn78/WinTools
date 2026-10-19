@@ -28,21 +28,17 @@ namespace WinTools.UI
         {
             Button = b;
             ShowLabels = showLabels;
-            if (b.Separator) { Glyph = ""; return; }
-            if (ButtonVm.IsGlyph(b.Icon)) Glyph = ((char)Convert.ToInt32(b.Icon, 16)).ToString();
-            else if (b.Group && string.IsNullOrEmpty(b.Icon)) Glyph = "";
-            else
-            {
-                string key = string.IsNullOrEmpty(b.Icon) ? Tools.ResolveShortcut(Environment.ExpandEnvironmentVariables(b.Target)) : b.Icon;
-                if (key.StartsWith("shell:", StringComparison.OrdinalIgnoreCase) && !key.StartsWith("shell:AppsFolder", StringComparison.OrdinalIgnoreCase)) Glyph = "";
-                else
-                {
-                    _icon = IconCache.Get(key, 24, img => { if (img != null) { _icon = img; Raise("Icon"); Raise("ImageVisibility"); Raise("GlyphVisibility"); } });
-                    if (_icon == null) Glyph = key.IndexOf(':') > 0 && !Path.IsPathRooted(key) ? "" : "";
-                }
-            }
+            var look = IconLook.For(b);
+            Glyph = look.Glyph;
+            Mdi = look.Mdi;
+            IconBrush = look.Brush;
+            if (!string.IsNullOrEmpty(look.ImageKey))
+                _icon = IconCache.Get(look.ImageKey, 24, img => { if (img != null) { _icon = img; Raise("Icon"); Raise("ImageVisibility"); Raise("GlyphVisibility"); Raise("MdiVisibility"); } });
         }
-        public static bool IsGlyph(string s) => !string.IsNullOrEmpty(s) && s.Length == 4 && s.All(Uri.IsHexDigit);
+        public static bool IsGlyph(string s) => IconLook.IsGlyph(s);
+        public Geometry Mdi { get; }
+        public Brush IconBrush { get; }
+        public Visibility MdiVisibility => Mdi != null && _icon == null ? Visibility.Visible : Visibility.Collapsed;
         public bool ShowLabels { get; }
         public bool IsGroup => Button.Group;
         public bool IsSeparator => Button.Separator;
@@ -65,7 +61,7 @@ namespace WinTools.UI
         public string Glyph { get; private set; }
         public ImageSource Icon => _icon;
         public Visibility ImageVisibility => _icon != null ? Visibility.Visible : Visibility.Collapsed;
-        public Visibility GlyphVisibility => _icon == null ? Visibility.Visible : Visibility.Collapsed;
+        public Visibility GlyphVisibility => _icon == null && Mdi == null ? Visibility.Visible : Visibility.Collapsed;
         public Visibility LabelVisibility => ShowLabels && !Button.IconOnly && !string.IsNullOrEmpty(Button.Label) ? Visibility.Visible : Visibility.Collapsed;
         public Visibility GroupBadgeVisibility => IsGroup ? Visibility.Visible : Visibility.Collapsed;
 
@@ -493,11 +489,15 @@ namespace WinTools.UI
             KeepOpen = true;
             if (GroupPopup.IsOpen) GroupPopup.StaysOpen = true;   // mentre si trascina il menu non deve chiudersi
             d.Vm.DragOpacity = 0.35;
-            GhostLabel.Text = d.Vm.Label;
+            GhostLabel.Text = d.Vm.IsSeparator ? "Separatore" : d.Vm.Label;
             GhostImage.Source = d.Vm.Icon;
             GhostImage.Visibility = d.Vm.ImageVisibility;
             GhostGlyph.Text = d.Vm.Glyph;
+            GhostGlyph.Foreground = d.Vm.IconBrush;
             GhostGlyph.Visibility = d.Vm.GlyphVisibility;
+            GhostPath.Data = d.Vm.Mdi;
+            GhostPath.Fill = d.Vm.IconBrush;
+            GhostPath.Visibility = d.Vm.MdiVisibility;
             Ghost.IsOpen = true;
             Mouse.OverrideCursor = Cursors.Hand;
         }

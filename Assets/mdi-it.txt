@@ -1,0 +1,421 @@
+access: accesso varco
+access-point: punto di accesso wifi rete antenna
+account: utente persona cliente profilo account
+air: aria
+air-conditioner: condizionatore climatizzatore clima split impianto climatizzazione
+air-filter: filtro aria
+air-purifier: purificatore aria
+airplane: aereo volo
+alarm: allarme sveglia
+alarm-light: lampeggiante allarme impianto antintrusione
+alarm-panel: centrale allarme antifurto impianto antintrusione
+alert: avviso attenzione allarme
+alpha: lettera
+ambulance: ambulanza soccorso
+animal: animale
+antenna: antenna segnale
+apple: mela
+application: applicazione programma finestra
+archive: archivio scatola
+arrow: freccia
+attachment: allegato graffetta
+audio: audio suono
+auto: automatico
+backup: copia sicurezza salvataggio
+badge: tesserino badge distintivo
+bag: borsa
+ball: palla
+bank: banca
+barcode: codice barre
+barrier: barriera sbarra
+basket: cestino carrello
+bathroom: bagno
+battery: batteria pila accumulatore
+beach: spiaggia mare
+bed: letto camera
+bedroom: camera letto
+beer: birra
+bell: campanello campana notifica
+bicycle: bicicletta bici
+bike: bicicletta bici moto
+bin: cestino
+birthday: compleanno
+blinds: tapparella tende persiane
+bluetooth: bluetooth
+boat: barca nave
+bolt: fulmine bullone
+book: libro manuale
+bookmark: segnalibro
+boiler: caldaia
+bottle: bottiglia
+box: scatola pacco
+brain: cervello idea
+bread: pane
+bridge: ponte
+briefcase: valigetta lavoro ufficio borsa
+brightness: luminosita
+broadcast: trasmissione antenna
+brush: pennello
+bucket: secchio
+bug: insetto errore
+building: edificio palazzo
+bulb: lampadina
+bus: autobus pullman
+business: azienda affari
+button: pulsante
+cable: cavo
+cake: torta
+calculator: calcolatrice
+calendar: calendario data appuntamento
+call: chiamata telefonata
+camera: telecamera fotocamera videocamera
+camcorder: videocamera
+cancel: annulla
+car: auto automobile macchina veicolo
+card: scheda carta tessera
+cart: carrello acquisti
+cash: contanti denaro soldi
+cast: trasmetti
+cctv: telecamera videosorveglianza tvcc sorveglianza impianto nvr dvr registratore videoregistratore
+ceiling: soffitto
+cellphone: cellulare telefono smartphone
+certificate: certificato attestato
+chair: sedia
+charging: ricarica
+chart: grafico
+chat: chat messaggio conversazione
+check: spunta conferma fatto verificato
+chef: cuoco cucina
+chess: scacchi
+child: bambino figlio
+chip: chip processore
+church: chiesa
+circle: cerchio
+city: citta
+clipboard: appunti lista modulo
+clock: orologio ora
+close: chiudi
+closet: armadio
+cloud: nuvola cloud
+coffee: caffe bar caffetteria
+cog: ingranaggio impostazioni configurazione
+coin: moneta
+comment: commento
+compass: bussola
+computer: computer pc
+connection: connessione
+console: console terminale
+contact: contatto
+contactless: contactless pagamento
+contrast: contrasto
+cookie: biscotto
+counter: contatore
+cpu: processore cpu
+crane: gru
+credit: credito
+crown: corona
+cube: cubo
+cup: tazza
+currency: valuta moneta
+cursor: cursore
+cut: taglia forbici
+dashboard: cruscotto pannello
+database: database archivio dati
+delete: elimina cancella cestino
+desk: scrivania
+desktop: computer fisso pc postazione
+details: dettagli
+detector: rilevatore sensore
+devices: dispositivi apparecchi
+dialpad: tastiera telefono
+dimmer: regolatore luce
+dishwasher: lavastoviglie
+disk: disco
+dns: dns rete
+doctor: medico dottore
+document: documento
+dog: cane
+dollar: dollaro
+domain: azienda edificio sede
+door: porta
+doorbell: campanello citofono videocitofono
+download: scarica
+drill: trapano
+drink: bevanda
+drive: unita disco
+drop: goccia
+dryer: asciugatrice
+earth: terra mondo
+edit: modifica
+egg: uovo
+elevator: ascensore
+email: posta email messaggio
+emergency: emergenza
+energy: energia
+engine: motore
+error: errore
+escalator: scala mobile
+ethernet: rete cavo ethernet lan
+electric: elettrico elettricita impianto elettrico
+electricity: elettricita elettrico corrente
+eur: euro
+euro: euro
+ev: auto elettrica colonnina ricarica
+event: evento
+excavator: escavatore scavatrice
+exit: uscita
+extinguisher: estintore antincendio
+eye: occhio vista
+face: viso volto faccia
+factory: fabbrica stabilimento industria
+family: famiglia
+fan: ventilatore ventola
+farm: fattoria azienda agricola
+faucet: rubinetto
+file: file documento
+filter: filtro
+fingerprint: impronta digitale biometrico
+fire: fuoco fiamma incendio antincendio
+firewall: firewall sicurezza rete
+fish: pesce
+flag: bandiera
+flash: fulmine flash elettricita elettrico elettricista
+flask: provetta laboratorio
+floor: piano pavimento
+flower: fiore
+folder: cartella
+food: cibo
+forklift: muletto carrello elevatore
+form: modulo
+fridge: frigorifero frigo
+fruit: frutta
+fuel: carburante benzina gasolio
+furniture: mobili arredamento
+fuse: fusibile
+game: gioco
+garage: garage box autorimessa
+garden: giardino
+gas: gas
+gate: cancello
+gauge: manometro indicatore
+gear: ingranaggio
+generator: generatore gruppo elettrogeno
+gift: regalo
+glasses: occhiali
+globe: mondo globo internet
+gps: gps posizione
+graph: grafico
+grass: erba prato
+greenhouse: serra
+group: gruppo
+guitar: chitarra
+hammer: martello
+hand: mano
+handshake: stretta di mano accordo
+hard: duro
+hard-hat: elmetto casco cantiere operaio tecnico
+harddisk: disco fisso hard disk
+hdd: disco fisso
+headphones: cuffie
+headset: cuffie auricolari
+heart: cuore preferito salute
+heat: calore riscaldamento
+heater: stufa riscaldamento
+help: aiuto
+history: cronologia storia
+home: casa abitazione principale
+hospital: ospedale
+hotel: albergo hotel
+house: casa abitazione villa
+hvac: climatizzazione riscaldamento ventilazione impianto termico
+human: persona umano
+humidity: umidita
+image: immagine foto
+inbox: posta in arrivo
+industrial: industriale
+information: informazione dettagli
+internet: internet rete web
+invoice: fattura
+ip: indirizzo ip rete
+iron: ferro stiro
+key: chiave
+keyboard: tastiera
+kitchen: cucina
+ladder: scala
+lamp: lampada
+lan: rete lan cavo
+laptop: portatile notebook computer
+laundry: lavanderia
+lawn: prato
+leaf: foglia
+led: led luce
+library: biblioteca libreria
+light: luce
+lightbulb: lampadina luce idea
+lightning: fulmine elettricita elettrico
+link: collegamento link
+list: elenco lista
+location: posizione luogo
+lock: lucchetto blocco sicurezza chiuso
+map: mappa cartina
+marker: segnaposto indicatore
+medical: medico sanitario
+meter: contatore misuratore
+memory: memoria ram
+message: messaggio
+meter-electric: contatore elettrico impianto elettrico
+microphone: microfono
+microwave: microonde
+mobile: cellulare mobile
+modem: modem router
+money: soldi denaro
+monitor: monitor schermo
+moon: luna notte
+motion: movimento
+motion-sensor: sensore di movimento rilevatore volumetrico
+motorbike: moto motocicletta
+mountain: montagna
+mouse: mouse topo
+movie: film
+music: musica
+nas: nas archivio rete
+network: rete connessione
+newspaper: giornale notizie
+note: nota appunto
+notebook: quaderno taccuino
+office: ufficio
+office-building: ufficio palazzo edificio sede condominio palazzina
+oil: olio
+outlet: presa
+oven: forno
+package: pacco spedizione
+paint: vernice pittura
+palette: tavolozza colori
+panel: pannello quadro
+paper: carta
+parking: parcheggio
+password: password
+paw: zampa animale
+pen: penna
+pencil: matita modifica
+people: persone gente
+percent: percentuale sconto
+person: persona
+phone: telefono
+pill: pillola farmaco medicina
+pipe: tubo tubazione
+pizza: pizza
+plane: aereo
+plant: pianta
+plug: spina presa elettrico
+plumbing: idraulica impianto idraulico
+police: polizia
+pool: piscina
+power: alimentazione energia accensione corrente
+printer: stampante
+pump: pompa
+puzzle: puzzle
+qrcode: codice qr
+radiator: radiatore termosifone
+radio: radio
+rain: pioggia
+receipt: ricevuta scontrino
+recycle: riciclo
+refrigerator: frigorifero
+remote: telecomando remoto
+report: rapporto relazione
+restaurant: ristorante
+road: strada
+robot: robot
+rocket: razzo
+roof: tetto
+room: stanza camera
+router: router rete modem
+ruler: righello misura
+safe: cassaforte
+satellite: satellite parabola
+saw: sega
+scale: bilancia
+school: scuola
+screen: schermo
+screwdriver: cacciavite
+security: sicurezza
+sensor: sensore
+server: server rete
+shield: scudo protezione sicurezza
+shop: negozio
+shopping: acquisti spesa
+shovel: pala
+shower: doccia
+signal: segnale
+sim: sim scheda
+siren: sirena allarme
+smoke: fumo
+smoke-detector: rilevatore di fumo antincendio
+snowflake: neve fiocco freddo
+socket: presa elettrico
+sofa: divano
+silverware: posate ristorante pizzeria trattoria mensa
+solar: solare fotovoltaico
+solar-panel: pannello solare fotovoltaico impianto fotovoltaico
+speaker: altoparlante cassa diffusore
+sprinkler: irrigatore sprinkler antincendio impianto
+stairs: scale
+star: stella preferito
+store: negozio
+storefront: negozio vetrina
+sun: sole
+switch: interruttore switch
+sync: sincronizza
+table: tabella tavolo
+tablet: tablet
+tag: etichetta
+tank: serbatoio cisterna
+tape: nastro metro
+taxi: taxi
+telephone: telefono
+television: televisione tv
+thermometer: termometro temperatura
+thermostat: termostato cronotermostato
+ticket: biglietto ticket
+timer: timer
+toilet: bagno wc
+toolbox: cassetta attrezzi
+tools: attrezzi utensili elettroutensili trapano avvitatore
+tow-truck: carro attrezzi
+tower: torre traliccio
+tractor: trattore
+traffic: traffico semaforo
+train: treno
+transmission-tower: traliccio linea elettrica elettrico
+trash: cestino spazzatura
+tree: albero
+truck: camion autocarro furgone
+tv: televisione tv
+umbrella: ombrello
+usb: usb chiavetta
+user: utente
+vacuum: aspirapolvere
+valve: valvola
+van: furgone
+video: video
+videocam: videocamera
+vpn: vpn rete privata
+wall: muro parete
+wallet: portafoglio
+wan: rete internet
+warehouse: magazzino deposito
+washer: lavatrice
+washing: lavaggio
+watch: orologio
+water: acqua
+water-boiler: scaldabagno caldaia
+weather: meteo tempo
+web: web internet sito
+webcam: webcam telecamera
+wifi: wifi rete senza fili wireless
+wind: vento
+window: finestra
+wireless: wireless senza fili
+woman: donna
+wrench: chiave inglese manutenzione riparazione

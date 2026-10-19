@@ -72,6 +72,7 @@ namespace WinTools
 
             Index = new FileIndex();
             Apps = new AppCatalog();
+            IconCatalog.Preload();
             Updates = new Updater();
             Bar = new BarWindow();
             Bar.Prepare();
