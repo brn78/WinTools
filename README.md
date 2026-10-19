@@ -18,6 +18,9 @@ Non richiede installazione né dipendenze: **`WinTools.exe` è un unico file da 
 * **Spillo**: blocca la barra sempre visibile. **Ingranaggio**: impostazioni.
 * **Area di notifica**: clic sinistro mostra la barra, clic destro apre il menu (blocca, impostazioni, aggiorna l'indice, avvio con Windows, aggiornamenti, esci).
 
+## 🆕 Versione 1.1.3
+* **Correzione**: le icone di file e cartelle nei risultati (e dei tasti con icona del file) erano capovolte.
+
 ## 🆕 Versione 1.1.2
 * **Menu del tasto destro con le icone** (risultati, tasti della barra, contenitori) e sottomenu «Sposta in» che si apre davvero, con la freccia.
 

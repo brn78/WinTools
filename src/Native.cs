@@ -246,22 +246,38 @@ namespace WinTools
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        struct BITMAP { public int bmType, bmWidth, bmHeight, bmWidthBytes; public ushort bmPlanes, bmBitsPixel; public IntPtr bmBits; }
-        [DllImport("gdi32.dll")] static extern int GetObject(IntPtr hgdiobj, int cbBuffer, out BITMAP lpvObject);
+        struct BITMAPINFOHEADER
+        {
+            public int biSize, biWidth, biHeight;
+            public short biPlanes, biBitCount;
+            public int biCompression, biSizeImage, biXPelsPerMeter, biYPelsPerMeter, biClrUsed, biClrImportant;
+        }
+        [DllImport("gdi32.dll")] static extern int GetDIBits(IntPtr hdc, IntPtr hbm, uint start, uint lines, byte[] bits, ref BITMAPINFOHEADER bmi, uint usage);
+        [DllImport("user32.dll")] static extern IntPtr GetDC(IntPtr hwnd);
+        [DllImport("user32.dll")] static extern int ReleaseDC(IntPtr hwnd, IntPtr hdc);
 
+        /// <summary>
+        /// I pixel del bitmap, con il canale alfa, già nel verso giusto: GetDIBits con altezza negativa restituisce le
+        /// righe dall'alto in basso (leggere i bit grezzi della DIB section, come prima, li dava capovolti).
+        /// </summary>
         static BitmapSource FromHBitmapWithAlpha(IntPtr hbm, int w, int h)
         {
-            if (GetObject(hbm, Marshal.SizeOf(typeof(BITMAP)), out BITMAP bm) != 0 && bm.bmBitsPixel == 32 && bm.bmBits != IntPtr.Zero)
+            IntPtr hdc = GetDC(IntPtr.Zero);
+            try
             {
-                int stride = bm.bmWidthBytes;
+                int stride = w * 4;
+                var bmi = new BITMAPINFOHEADER { biSize = Marshal.SizeOf(typeof(BITMAPINFOHEADER)), biWidth = w, biHeight = -h, biPlanes = 1, biBitCount = 32, biCompression = 0 };
                 byte[] pixels = new byte[stride * h];
-                Marshal.Copy(bm.bmBits, pixels, 0, pixels.Length);
-                // Alcune icone a 32 bit hanno l'alfa tutto a zero: allora si considerano opache
-                bool anyAlpha = false;
-                for (int i = 3; i < pixels.Length; i += 4) { if (pixels[i] != 0) { anyAlpha = true; break; } }
-                var fmt = anyAlpha ? PixelFormats.Bgra32 : PixelFormats.Bgr32;
-                return BitmapSource.Create(w, h, 96, 96, fmt, null, pixels, stride);
+                if (GetDIBits(hdc, hbm, 0, (uint)h, pixels, ref bmi, 0) == h)
+                {
+                    // Alcune icone a 32 bit hanno l'alfa tutto a zero: allora si considerano opache
+                    bool anyAlpha = false;
+                    for (int i = 3; i < pixels.Length; i += 4) { if (pixels[i] != 0) { anyAlpha = true; break; } }
+                    return BitmapSource.Create(w, h, 96, 96, anyAlpha ? PixelFormats.Bgra32 : PixelFormats.Bgr32, null, pixels, stride);
+                }
             }
+            catch { }
+            finally { if (hdc != IntPtr.Zero) ReleaseDC(IntPtr.Zero, hdc); }
             return Imaging.CreateBitmapSourceFromHBitmap(hbm, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
         }
 

@@ -15,7 +15,7 @@
     <Nullable>disable</Nullable>
     <RootNamespace>WinTools</RootNamespace>
     <AssemblyName>WinTools</AssemblyName>
-    <Version>1.1.2</Version>
+    <Version>1.1.3</Version>
     <Product>WinTools</Product>
     <Company>brn78</Company>
     <Authors>brn78</Authors>
