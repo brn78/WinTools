@@ -156,6 +156,38 @@ namespace WinTools
 
         public static void EmptyRecycleBin() { Native.EmptyRecycleBin(); }
 
+        /// <summary>
+        /// Cerca nel Cestino l'elemento che stava in quel percorso e lo ripristina (verbo «Ripristina» della shell).
+        /// Il nome visualizzato può non avere l'estensione (impostazione di Esplora file): la si riprende dal file nel Cestino.
+        /// </summary>
+        public static bool RestoreFromRecycleBin(string originalPath)
+        {
+            try
+            {
+                string wanted = Native.LongPath(originalPath.TrimEnd('\\'));
+                dynamic shell = Activator.CreateInstance(Type.GetTypeFromProgID("Shell.Application"));
+                dynamic bin = shell.NameSpace(10);
+                if (bin == null) return false;
+                foreach (dynamic item in bin.Items())
+                {
+                    string dir = (string)bin.GetDetailsOf(item, 1) ?? "";   // «Percorso originale»
+                    string name = (string)item.Name ?? "";
+                    string ext = "";
+                    try { ext = Path.GetExtension((string)item.Path) ?? ""; } catch { }
+                    if (ext != "" && !name.EndsWith(ext, StringComparison.OrdinalIgnoreCase)) name += ext;
+                    string full = Path.Combine(dir, name);
+                    if (!string.Equals(full, wanted, StringComparison.OrdinalIgnoreCase)) continue;
+                    foreach (dynamic v in item.Verbs())
+                    {
+                        string vn = ((string)v.Name ?? "").Replace("&", "").Trim();
+                        if (vn.StartsWith("Ripristina", StringComparison.OrdinalIgnoreCase) || vn.StartsWith("Restore", StringComparison.OrdinalIgnoreCase)) { v.DoIt(); return true; }
+                    }
+                }
+            }
+            catch (Exception ex) { Program.LogError("Ripristino dal Cestino", ex); }
+            return false;
+        }
+
         public static void ShowProperties(string path)
         {
             if (!Native.ShowProperties(path)) Program.LogError("Proprietà", new Exception("ShellExecuteEx non riuscito per " + path));

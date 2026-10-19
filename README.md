@@ -23,6 +23,9 @@ In entrambi i casi l'aggiornamento automatico sostituisce l'exe sul posto.
 * **Spillo**: blocca la barra sempre visibile. **Ingranaggio**: impostazioni.
 * **Area di notifica**: clic sinistro mostra la barra, clic destro apre il menu (blocca, impostazioni, aggiorna l'indice, avvio con Windows, aggiornamenti, esci).
 
+## 🆕 Versione 1.8.0
+* **I tasti sono collegamenti, non copie**: un tasto creato da un file apre quel file dov'è. Se il file viene spostato o eliminato, il tasto mostra un **triangolo di avviso** e il suggerimento lo spiega; nel suo menu compaiono **«Ripristina dal Cestino»** (lo riprende se è ancora lì) e **«Cerca nell'indice»** (per ritrovarlo se è stato spostato).
+* **Archivio di WinTools**: con «Conserva una copia nell'archivio di WinTools» (menu del tasto) il file viene copiato in `%LOCALAPPDATA%\WinTools\Archivio` e il tasto apre la copia: l'originale può sparire senza conseguenze. Dopo un trascinamento di file l'avviso lo ricorda e offre **«Conserva copie»** per tutti insieme.
 ## 🆕 Versione 1.7.1
 * **Trascinamento anche di Questo PC, Rete, Cestino** e degli altri elementi del desktop senza percorso: arrivano nel formato della shell («Shell IDList Array») e diventano tasti con la loro icona, che aprono la cartella giusta. Prima il cursore mostrava il divieto. Nel loro menu ci sono le voci di Esplora file: **Gestione** e **Proprietà** per Questo PC, **Connessioni di rete** e Proprietà per Rete, **Svuota il Cestino** e Proprietà per il Cestino; anche i tasti con un percorso hanno ora **Proprietà**.
 * **La barra compare anche mentre trascini**: con un tasto del mouse premuto, dopo una sosta di poco meno di un secondo sul bordo si apre senza prendere il fuoco, così puoi rilasciarci sopra file e icone. Prima, iniziando a trascinare dal desktop, la barra si ritirava e non tornava fino al rilascio.

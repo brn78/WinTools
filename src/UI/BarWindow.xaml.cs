@@ -34,8 +34,29 @@ namespace WinTools.UI
             IconBrush = look.Brush;
             if (!string.IsNullOrEmpty(look.ImageKey))
                 _icon = IconCache.Get(look.ImageKey, 24, img => { if (img != null) { _icon = img; Raise("Icon"); Raise("ImageVisibility"); Raise("GlyphVisibility"); Raise("MdiVisibility"); } });
+            MissingPath = ComputeMissing(b);
         }
         public static bool IsGlyph(string s) => IconLook.IsGlyph(s);
+
+        /// <summary>Percorso del bersaglio se è un file o una cartella locale che non esiste più (spostato o eliminato), altrimenti null.</summary>
+        public string MissingPath { get; }
+        public bool IsMissing => MissingPath != null;
+        public Visibility MissingVisibility => IsMissing ? Visibility.Visible : Visibility.Collapsed;
+
+        static string ComputeMissing(BarButton b)
+        {
+            if (b.Separator || b.Group) return null;
+            try
+            {
+                string t = Environment.ExpandEnvironmentVariables((b.Target ?? "").Trim().Trim('"'));
+                if (t.Length < 3 || !Path.IsPathRooted(t) || t.StartsWith("\\\\")) return null;   // comandi, URL, shell:, UNC: non si controllano
+                if (t.IndexOfAny(Path.GetInvalidPathChars()) >= 0) return null;
+                var drive = new DriveInfo(t.Substring(0, 1));
+                if (!drive.IsReady) return null;   // disco non pronto (rete, chiavetta): non è detto che manchi
+                return File.Exists(t) || Directory.Exists(t) ? null : t;
+            }
+            catch { return null; }
+        }
         public Geometry Mdi { get; }
         public Brush IconBrush { get; }
         public Visibility MdiVisibility => Mdi != null && _icon == null ? Visibility.Visible : Visibility.Collapsed;
@@ -58,8 +79,9 @@ namespace WinTools.UI
             {
                 if (IsSeparator) return (string.IsNullOrEmpty(Button.Label) ? "" : Button.Label + "\n") + "Separatore · trascinalo per spostarlo, tasto destro per la descrizione o per toglierlo";
                 if (IsGroup) return $"{Button.Label}\n{Button.Children.Count} {(Button.Children.Count == 1 ? "tasto" : "tasti")} · clic per aprire, trascina qui un tasto per aggiungerlo";
-                if (string.IsNullOrEmpty(Button.Label)) return Button.Target;
-                return (Button.IconOnly || !ShowLabels ? Button.Label + "\n" : "") + Button.Target + (Button.Admin ? "  (amministratore)" : "");
+                string warn = IsMissing ? "⚠ File non trovato: spostato o eliminato (tasto destro: Ripristina dal Cestino, Cerca nell'indice)\n" : "";
+                if (string.IsNullOrEmpty(Button.Label)) return warn + Button.Target;
+                return warn + (Button.IconOnly || !ShowLabels ? Button.Label + "\n" : "") + Button.Target + (Button.Admin ? "  (amministratore)" : "");
             }
         }
         public string Glyph { get; private set; }
@@ -1007,14 +1029,29 @@ namespace WinTools.UI
                 var g = new BarButton { Group = true, Icon = "E8B7", Label = GroupNameFor(buttons.Select(b => b.Target).ToArray()), Children = buttons };
                 S.Buttons.Insert(at, g);
                 CommitButtons();
-                ShowNotice("success", $"Contenitore «{g.Label}» con {buttons.Count} elementi.", "Clic destro sul tasto per modificarlo.", "Rinomina…", () =>
-                {
-                    if (RunDialog(() => new ButtonEditorWindow(g))) CommitButtons();
-                });
+                NoticeAfterDrop($"Contenitore «{g.Label}» con {buttons.Count} elementi.", buttons, () => { if (RunDialog(() => new ButtonEditorWindow(g))) CommitButtons(); });
                 return;
             }
             foreach (var b in buttons) list.Insert(at++, b);
             CommitButtons();
+            NoticeAfterDrop(buttons.Count == 1 ? $"Tasto «{buttons[0].Label}» aggiunto." : $"{buttons.Count} tasti aggiunti.", buttons, null);
+        }
+
+        /// <summary>
+        /// Dopo un rilascio: i tasti aprono i file originali, quindi se questi vengono spostati o eliminati smettono di
+        /// funzionare. Con dei file tra gli elementi si offre «Conserva copie» (archivio di WinTools); altrimenti, per un
+        /// contenitore, «Rinomina…».
+        /// </summary>
+        void NoticeAfterDrop(string title, List<BarButton> buttons, Action rename)
+        {
+            var files = buttons.Where(b => { string t = Environment.ExpandEnvironmentVariables(b.Target ?? ""); return Path.IsPathRooted(t) && File.Exists(t); }).ToList();
+            if (files.Count > 0)
+            {
+                ShowNotice("info", title, files.Count == 1 ? "Il tasto apre il file originale: se lo sposti o lo elimini smette di funzionare. «Conserva copie» lo mette al sicuro nell'archivio di WinTools." : "I tasti aprono i file originali: se li sposti o li elimini smettono di funzionare. «Conserva copie» li mette al sicuro nell'archivio di WinTools.",
+                    "Conserva copie", () => { int n = ArchiveButtons(files); ShowNotice("success", n == 1 ? "Copia conservata." : $"{n} copie conservate.", "I tasti ora aprono le copie in " + ArchiveDir + "."); }, sticky: true);
+            }
+            else if (rename != null) ShowNotice("success", title, "Clic destro sul tasto per modificarlo.", "Rinomina…", rename);
+            else ShowNotice("success", title, "Clic destro sul tasto per modificarlo.");
         }
 
         static BarButton ButtonForPath(string f)
@@ -1074,6 +1111,7 @@ namespace WinTools.UI
                     m.Items.Add(Menu("Apri il percorso del file", "", () => Reveal(b)));
                 }
                 AddTargetItems(m.Items, b);
+                AddKeepItems(m.Items, vm);
                 m.Items.Add(new Separator());
                 m.Items.Add(MoveToMenu(b));
                 m.Items.Add(Menu("Modifica…", "", () => EditButton(b)));
@@ -1124,6 +1162,73 @@ namespace WinTools.UI
             string path = Environment.ExpandEnvironmentVariables(t);
             if (Path.IsPathRooted(path) && (File.Exists(path) || Directory.Exists(path)))
                 items.Add(Menu("Proprietà", "", () => { Tools.ShowProperties(path); after(); }));
+        }
+
+        // ------------------------------------------------------------------ file mancanti e archivio
+        /// <summary>Cartella in cui WinTools conserva le copie dei file: così un tasto continua a funzionare anche se l'originale sparisce.</summary>
+        public static string ArchiveDir => Path.Combine(AppSettings.AppDir, "Archivio");
+
+        static bool IsArchived(string path) => path.StartsWith(ArchiveDir + "\\", StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>Voci per i file: «Ripristina dal Cestino» e «Cerca nell'indice» se manca, «Conserva una copia nell'archivio» se c'è.</summary>
+        void AddKeepItems(ItemCollection items, ButtonVm vm)
+        {
+            var b = vm.Button;
+            if (vm.IsMissing)
+            {
+                string path = vm.MissingPath;
+                items.Add(Menu("Ripristina dal Cestino", "", () => RestoreMissing(b, path)));
+                items.Add(Menu("Cerca nell'indice", "", () => { GroupPopup.IsOpen = false; SearchBox.Text = Path.GetFileNameWithoutExtension(path); SearchBox.Focus(); SearchBox.SelectAll(); }));
+                return;
+            }
+            string t = Environment.ExpandEnvironmentVariables((b.Target ?? "").Trim().Trim('"'));
+            if (Path.IsPathRooted(t) && File.Exists(t) && !IsArchived(t))
+                items.Add(Menu("Conserva una copia nell'archivio di WinTools", "", () => { int n = ArchiveButtons(new[] { b }); if (n > 0) ShowNotice("success", "Copia conservata.", "Il tasto ora apre la copia in " + ArchiveDir + ": l'originale può essere spostato o eliminato."); }));
+        }
+
+        /// <summary>Copia i file dei tasti indicati nell'archivio e punta i tasti alle copie. Restituisce quanti ne ha copiati.</summary>
+        int ArchiveButtons(IEnumerable<BarButton> buttons)
+        {
+            int n = 0;
+            foreach (var b in buttons)
+            {
+                try
+                {
+                    string src = Environment.ExpandEnvironmentVariables((b.Target ?? "").Trim().Trim('"'));
+                    if (!Path.IsPathRooted(src) || !File.Exists(src) || IsArchived(src)) continue;
+                    string dir = Path.Combine(ArchiveDir, b.Id);
+                    Directory.CreateDirectory(dir);
+                    string dest = Path.Combine(dir, Path.GetFileName(src));
+                    File.Copy(src, dest, true);
+                    b.Target = dest;
+                    n++;
+                }
+                catch (Exception ex) { Program.LogError("Archivio", ex); }
+            }
+            if (n > 0) CommitButtons();
+            return n;
+        }
+
+        /// <summary>Prova a riprendere dal Cestino il file di un tasto che non c'è più.</summary>
+        void RestoreMissing(BarButton b, string path)
+        {
+            GroupPopup.IsOpen = false;
+            if (!Tools.RestoreFromRecycleBin(path))
+            {
+                ShowNotice("warning", "Non è nel Cestino.", "Il file potrebbe essere stato spostato (prova «Cerca nell'indice») o eliminato definitivamente. Se lo ricrei nello stesso posto, il tasto torna a funzionare.");
+                return;
+            }
+            // Il ripristino è asincrono: si aspetta che il file ricompaia, poi si ridisegnano i tasti
+            Task.Run(async () =>
+            {
+                for (int i = 0; i < 30 && !File.Exists(path) && !Directory.Exists(path); i++) await Task.Delay(100).ConfigureAwait(false);
+                await Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    bool ok = File.Exists(path) || Directory.Exists(path);
+                    CommitButtons();
+                    ShowNotice(ok ? "success" : "warning", ok ? "Ripristinato dal Cestino." : "Ripristino non confermato.", path);
+                }));
+            });
         }
 
         /// <summary>Un separatore subito dopo il tasto indicato (nello stesso elenco), oppure in fondo alla barra.</summary>
@@ -1347,6 +1452,7 @@ namespace WinTools.UI
             m.Items.Add(Menu("Apri", "", () => { GroupPopup.IsOpen = false; Tools.Launch(b); if (!S.Pinned) HideBar(); }));
             if (!IsShellTarget(b)) m.Items.Add(Menu("Apri come amministratore", "", () => Tools.Open(b.Target, b.Arguments, b.WorkingDir, true)));
             AddTargetItems(m.Items, b);
+            AddKeepItems(m.Items, vm);
             m.Items.Add(new Separator());
             m.Items.Add(MoveToMenu(b));
             m.Items.Add(Menu("Modifica…", "", () => EditButton(b)));

@@ -406,6 +406,24 @@ namespace WinTools
             catch { return false; }
         }
 
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        static extern uint GetLongPathName(string shortPath, System.Text.StringBuilder longPath, uint size);
+
+        /// <summary>Forma lunga di un percorso (C:\Users\ADMINI~1 → C:\Users\Administrator); se il file non esiste si allunga la sola cartella.</summary>
+        public static string LongPath(string path)
+        {
+            try
+            {
+                var sb = new System.Text.StringBuilder(1024);
+                if (GetLongPathName(path, sb, (uint)sb.Capacity) > 0) return sb.ToString();
+                string dir = System.IO.Path.GetDirectoryName(path);
+                if (string.IsNullOrEmpty(dir)) return path;
+                if (GetLongPathName(dir, sb, (uint)sb.Capacity) > 0) return System.IO.Path.Combine(sb.ToString(), System.IO.Path.GetFileName(path));
+            }
+            catch { }
+            return path;
+        }
+
         /// <summary>Svuota il Cestino con la conferma di Windows.</summary>
         public static bool EmptyRecycleBin()
         {
