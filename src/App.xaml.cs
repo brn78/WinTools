@@ -178,7 +178,8 @@ namespace WinTools
             if (Settings.Monitor == "primary" && !screen.Primary) { _edgeSince = DateTime.MinValue; return; }
             var b = screen.Bounds;
             bool onEdge = Settings.Edge == "bottom" ? p.Y >= b.Bottom - 1 : p.Y <= b.Top;
-            if (!onEdge) { _edgeSince = DateTime.MinValue; return; }
+            // Con uno spazio definito conta solo il tratto della barra: il resto del bordo (schede, tasti delle finestre) resta libero
+            if (!onEdge || !Settings.SpanContains(p.X, b.Left, b.Width)) { _edgeSince = DateTime.MinValue; return; }
             // Con un tasto del mouse premuto si sta probabilmente trascinando qualcosa (file dal desktop, una finestra):
             // la barra compare lo stesso, ma dopo una sosta più lunga sul bordo e senza prendere il fuoco, così ci si
             // può rilasciare sopra ciò che si trascina. Prima non compariva affatto e il rilascio finiva nel vuoto.

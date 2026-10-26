@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -96,7 +97,8 @@ namespace WinTools.UI
             UpdateAccentSwatch();
             Select(EdgeBox, _work.Edge);
             Select(MonitorBox, _work.Monitor);
-            FullWidthBox.IsChecked = _work.FullWidth;
+            Select(SpanBox, _work.Span);
+            SetSpan(_work.SpanFrom, _work.SpanTo);
             LabelsBox.IsChecked = _work.ShowLabels;
             InfoStripBox.IsChecked = _work.ShowInfoStrip;
             EdgeTriggerBox.IsChecked = _work.EdgeTrigger;
@@ -195,6 +197,84 @@ namespace WinTools.UI
         }
 
         void HotkeyClear_Click(object sender, RoutedEventArgs e) { _hotkey = ""; HotkeyBox.Text = "Nessuno"; }
+
+        // ------------------------------------------------------------------ spazio della barra
+        // Il tratto del bordo in percentuale della larghezza dello schermo. Nella miniatura la barra si trascina (Thumb):
+        // lo spostamento arriva rispetto al punto afferrato, quindi gli scatti di un punto percentuale non perdono strada.
+        int _spanFrom = 25, _spanTo = 75;
+        bool _spanLoading;
+
+        void SpanBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (SpanEditor == null) return;
+            SpanEditor.Visibility = Selected(SpanBox) == "custom" ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        void EdgeBox_SelectionChanged(object sender, SelectionChangedEventArgs e) { if (SpanCanvas != null) LayoutSpan(); }
+
+        void SpanCanvas_SizeChanged(object sender, SizeChangedEventArgs e) { LayoutSpan(); }
+
+        /// <summary>Imposta il tratto (già valido): caselle e miniatura.</summary>
+        void SetSpan(int from, int to)
+        {
+            _spanFrom = from;
+            _spanTo = to;
+            _spanLoading = true;
+            SpanFromBox.Text = from.ToString();
+            SpanToBox.Text = to.ToString();
+            _spanLoading = false;
+            LayoutSpan();
+        }
+
+        /// <summary>La barra in miniatura: in alto o in basso come il lato scelto, con le maniglie dentro le sue estremità.</summary>
+        void LayoutSpan()
+        {
+            double w = SpanCanvas.ActualWidth, h = SpanCanvas.ActualHeight;
+            if (w <= 0) return;
+            bool bottom = Selected(EdgeBox) == "bottom";
+            double x = w * _spanFrom / 100, right = w * _spanTo / 100, y = bottom ? h - SpanBody.Height : 0;
+            SpanBody.Tag = bottom ? new CornerRadius(4, 4, 0, 0) : new CornerRadius(0, 0, 4, 4);
+            SpanBody.Width = right - x;
+            Canvas.SetLeft(SpanBody, x);
+            Canvas.SetTop(SpanBody, y);
+            Canvas.SetLeft(SpanStartGrip, x);
+            Canvas.SetTop(SpanStartGrip, y);
+            Canvas.SetLeft(SpanEndGrip, right - SpanEndGrip.Width);
+            Canvas.SetTop(SpanEndGrip, y);
+        }
+
+        void SpanBody_DragDelta(object sender, DragDeltaEventArgs e) { MoveSpan(e.HorizontalChange, true, true); }
+        void SpanStartGrip_DragDelta(object sender, DragDeltaEventArgs e) { MoveSpan(e.HorizontalChange, true, false); }
+        void SpanEndGrip_DragDelta(object sender, DragDeltaEventArgs e) { MoveSpan(e.HorizontalChange, false, true); }
+
+        /// <summary>Sposta l'inizio, la fine o tutto il tratto di tanti punti percentuali quanti ne copre il trascinamento.</summary>
+        void MoveSpan(double dx, bool moveFrom, bool moveTo)
+        {
+            int d = (int)Math.Round(dx * 100 / SpanCanvas.ActualWidth);
+            if (d == 0) return;
+            int from = _spanFrom, to = _spanTo;
+            if (moveFrom && moveTo)
+            {
+                d = Math.Max(-from, Math.Min(100 - to, d));   // tutta la barra, senza uscire dallo schermo
+                from += d;
+                to += d;
+            }
+            else if (moveFrom) from = Math.Max(0, Math.Min(to - AppSettings.MinSpanPercent, from + d));
+            else to = Math.Min(100, Math.Max(from + AppSettings.MinSpanPercent, to + d));
+            if (from != _spanFrom || to != _spanTo) SetSpan(from, to);
+        }
+
+        /// <summary>Valori scritti a mano: la miniatura li segue appena formano un tratto valido; Salva usa l'ultimo valido.</summary>
+        void SpanText_Changed(object sender, TextChangedEventArgs e)
+        {
+            if (_spanLoading || SpanToBox == null) return;
+            int from, to;
+            if (!int.TryParse(SpanFromBox.Text.Trim(), out from) || !int.TryParse(SpanToBox.Text.Trim(), out to)) return;
+            if (from < 0 || to > 100 || to - from < AppSettings.MinSpanPercent) return;
+            _spanFrom = from;
+            _spanTo = to;
+            LayoutSpan();
+        }
 
         // ------------------------------------------------------------------ colore di accento
         string _accent = "";
@@ -608,7 +688,10 @@ namespace WinTools.UI
             s.AccentColor = _accent ?? "";
             s.Edge = Selected(EdgeBox) ?? "top";
             s.Monitor = Selected(MonitorBox) ?? "cursor";
-            s.FullWidth = FullWidthBox.IsChecked == true;
+            s.Span = Selected(SpanBox) ?? "auto";
+            s.FullWidth = s.Span == "full";
+            s.SpanFrom = _spanFrom;
+            s.SpanTo = _spanTo;
             s.ShowLabels = LabelsBox.IsChecked == true;
             s.ShowInfoStrip = InfoStripBox.IsChecked == true;
             s.EdgeTrigger = EdgeTriggerBox.IsChecked == true;

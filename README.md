@@ -17,12 +17,16 @@ In entrambi i casi l'aggiornamento automatico sostituisce l'exe sul posto.
 
 ## 🚀 Come si usa
 
-* **Porta il mouse sul bordo superiore dello schermo**: la barra scende; quando il mouse se ne va, si ritira. Oppure premi **Ctrl+Alt+W** (configurabile) o fai clic sull'icona nell'area di notifica.
+* **Porta il mouse sul bordo superiore dello schermo** (o sul tratto del bordo che hai scelto nelle impostazioni): la barra scende; quando il mouse se ne va, si ritira. Oppure premi **Ctrl+Alt+W** (configurabile) o fai clic sull'icona nell'area di notifica.
 * **Cerca**: scrivi nella casella e i risultati compaiono mentre digiti. Frecce per scegliere, **Invio** apre, **Ctrl+Invio** apre la cartella che contiene il file, **Shift+Invio** avvia come amministratore, **Esc** chiude. In fondo ci sono sempre «Esegui» (come Win+R) e «Cerca sul web».
 * **Tasti**: clic per aprire, **trascina** per riordinare, tasto destro per modificare o rimuovere, **+** per aggiungerne uno. **Trascina un file o una cartella sulla barra** e diventa un tasto. Un **contenitore** raccoglie più tasti in un menu: trascinaci sopra i tasti che vuoi.
 * **Spillo**: blocca la barra sempre visibile. **Ingranaggio**: impostazioni.
 * **Area di notifica**: clic sinistro mostra la barra, clic destro apre il menu (blocca, impostazioni, aggiorna l'indice, avvio con Windows, aggiornamenti, esci).
 
+## 🆕 Versione 1.10.0
+* **Spazio della barra a scelta** (*Impostazioni → Generale → Aspetto*): centrata e larga quanto serve, larga quanto lo schermo oppure **in un tratto del bordo scelto da te**. Nella miniatura dello schermo trascini la barra per spostarla e le maniglie ai lati per allargarla o stringerla, oppure scrivi inizio e fine in percentuale. Con lo spazio definito la barra **compare solo quando il mouse tocca il bordo in quel tratto**: il resto del bordo (schede del browser, tasti delle finestre) resta libero. Con più schermi il tratto vale su ciascuno.
+* In una barra stretta i tasti che non ci stanno scorrono con le **frecce ai lati** (una pagina di tasti interi per clic) o con la rotella, e la riga informazioni va a capo invece di finire tagliata. Se il tratto è troppo stretto per ricerca e tasti, la barra si allarga quanto basta attorno al suo centro.
+* **Correzione**: il pannello dei filtri della ricerca si chiudeva al primo clic al suo interno e non si riusciva a impostare nulla.
 ## 🆕 Versione 1.9.1
 * **Tolta la copia dei file nell'archivio** (automatica, «Conserva copie» e la voce nel menu): i tasti creati da un file restano collegamenti al file dov'è, con l'avviso dopo il rilascio e, se il file sparisce, il triangolo di avviso con «Ripristina dal Cestino» e «Cerca nell'indice». Motivo: su alcuni PC Esplora file non apre le cartelle create sotto AppData, e «Apri il percorso del file» falliva sulle copie. L'archivio resta solo per i file .rdp generati dal riquadro Desktop remoto.
 ## 🆕 Versione 1.9.0

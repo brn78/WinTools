@@ -17,6 +17,38 @@
     <Style x:Key="Section" TargetType="TextBlock" BasedOn="{StaticResource TxtBodyStrong}">
       <Setter Property="Margin" Value="0,18,0,8"/>
     </Style>
+    <!-- Spazio definito: la barra nella miniatura dello schermo (si trascina; gli angoli arrotondati arrivano dal Tag, verso l'interno) -->
+    <Style x:Key="SpanBarThumb" TargetType="Thumb">
+      <Setter Property="Cursor" Value="SizeAll"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Thumb">
+            <Border x:Name="Bd" Background="{DynamicResource Accent}" CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"/>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentHover}"/></Trigger>
+              <Trigger Property="IsDragging" Value="True"><Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentPressed}"/></Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+    <!-- Maniglia a un'estremità della barra in miniatura: una tacca che si accende al passaggio -->
+    <Style x:Key="SpanGripThumb" TargetType="Thumb">
+      <Setter Property="Cursor" Value="SizeWE"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Thumb">
+            <Grid Background="Transparent">
+              <Border x:Name="Notch" Width="3" Height="10" CornerRadius="1.5" Background="{DynamicResource TextOnAccent}" Opacity="0.45"/>
+            </Grid>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Notch" Property="Opacity" Value="1"/></Trigger>
+              <Trigger Property="IsDragging" Value="True"><Setter TargetName="Notch" Property="Opacity" Value="1"/></Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
   </Window.Resources>
 
   <Grid>
@@ -102,7 +134,7 @@
                 <Grid>
                   <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                   <StackPanel><TextBlock Text="Lato dello schermo" Style="{StaticResource RowLabel}"/><TextBlock Text="Da dove compare la barra." Style="{StaticResource RowDesc}"/></StackPanel>
-                  <ComboBox Grid.Column="1" x:Name="EdgeBox" Width="180" VerticalAlignment="Center">
+                  <ComboBox Grid.Column="1" x:Name="EdgeBox" Width="180" VerticalAlignment="Center" SelectionChanged="EdgeBox_SelectionChanged">
                     <ComboBoxItem Content="In alto" Tag="top"/><ComboBoxItem Content="In basso" Tag="bottom"/>
                   </ComboBox>
                 </Grid>
@@ -117,11 +149,39 @@
                 </Grid>
               </Border>
               <Border Style="{StaticResource SettingCard}">
-                <Grid>
-                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                  <StackPanel><TextBlock Text="Barra larga quanto lo schermo" Style="{StaticResource RowLabel}"/><TextBlock Text="Altrimenti è centrata e larga quanto serve ai tasti." Style="{StaticResource RowDesc}"/></StackPanel>
-                  <ToggleButton Grid.Column="1" x:Name="FullWidthBox" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"/>
-                </Grid>
+                <StackPanel>
+                  <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <StackPanel><TextBlock Text="Spazio della barra" Style="{StaticResource RowLabel}"/><TextBlock Text="Centrata e larga quanto serve ai tasti, larga quanto lo schermo, oppure in un tratto del bordo scelto da te." Style="{StaticResource RowDesc}"/></StackPanel>
+                    <ComboBox Grid.Column="1" x:Name="SpanBox" Width="220" VerticalAlignment="Center" SelectionChanged="SpanBox_SelectionChanged">
+                      <ComboBoxItem Content="Centrata, larga quanto serve" Tag="auto"/><ComboBoxItem Content="Larga quanto lo schermo" Tag="full"/><ComboBoxItem Content="Spazio definito" Tag="custom"/>
+                    </ComboBox>
+                  </Grid>
+                  <!-- spazio definito: lo schermo in miniatura; la barra si trascina per spostarla, dalle maniglie si allarga o si stringe -->
+                  <Grid x:Name="SpanEditor" Margin="0,14,0,2" Visibility="Collapsed">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                    <Border Width="288" Height="162" CornerRadius="6" BorderThickness="1" Background="{DynamicResource LogFill}" BorderBrush="{DynamicResource ControlStroke}" VerticalAlignment="Top">
+                      <Canvas x:Name="SpanCanvas" ClipToBounds="True" SizeChanged="SpanCanvas_SizeChanged">
+                        <Thumb x:Name="SpanBody" Style="{StaticResource SpanBarThumb}" Height="16" DragDelta="SpanBody_DragDelta" ToolTip="Trascina per spostare la barra"/>
+                        <Thumb x:Name="SpanStartGrip" Style="{StaticResource SpanGripThumb}" Width="10" Height="16" DragDelta="SpanStartGrip_DragDelta" ToolTip="Trascina per spostare l'inizio"/>
+                        <Thumb x:Name="SpanEndGrip" Style="{StaticResource SpanGripThumb}" Width="10" Height="16" DragDelta="SpanEndGrip_DragDelta" ToolTip="Trascina per spostare la fine"/>
+                      </Canvas>
+                    </Border>
+                    <StackPanel Grid.Column="1" Margin="20,0,0,0">
+                      <Grid>
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                        <TextBlock Text="Inizio" Style="{StaticResource RowLabel}" Margin="0,0,12,0"/>
+                        <TextBox Grid.Column="1" x:Name="SpanFromBox" Width="64" TextAlignment="Right" VerticalAlignment="Center" TextChanged="SpanText_Changed"/>
+                        <TextBlock Grid.Column="2" Text="%" Style="{StaticResource RowLabel}" Margin="8,0,0,0"/>
+                        <TextBlock Grid.Row="1" Text="Fine" Style="{StaticResource RowLabel}" Margin="0,8,12,0"/>
+                        <TextBox Grid.Row="1" Grid.Column="1" x:Name="SpanToBox" Width="64" TextAlignment="Right" VerticalAlignment="Center" Margin="0,8,0,0" TextChanged="SpanText_Changed"/>
+                        <TextBlock Grid.Row="1" Grid.Column="2" Text="%" Style="{StaticResource RowLabel}" Margin="8,8,0,0"/>
+                      </Grid>
+                      <TextBlock Style="{StaticResource RowDesc}" Margin="0,12,0,0" Text="In percentuale della larghezza dello schermo. La barra compare solo quando il mouse tocca il bordo in questo tratto: il resto del bordo resta libero. I tasti che non ci stanno scorrono con le frecce o con la rotella; se il tratto è troppo stretto, la barra si allarga quanto basta."/>
+                    </StackPanel>
+                  </Grid>
+                </StackPanel>
               </Border>
               <Border Style="{StaticResource SettingCard}">
                 <Grid>

@@ -7,6 +7,14 @@
         UseLayoutRounding="True" SnapsToDevicePixels="True" TextOptions.TextFormattingMode="Ideal" TextOptions.TextRenderingMode="ClearType"
         AllowDrop="True" Width="1200">
   <Window.Resources>
+    <!-- Freccia ai lati dei tasti quando non ci stanno tutti (barra stretta): il clic scorre di una pagina di tasti interi -->
+    <Style x:Key="ScrollEdgeButton" TargetType="Button" BasedOn="{StaticResource SubtleButton}">
+      <Setter Property="Width" Value="22"/>
+      <Setter Property="MinHeight" Value="0"/>
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="Margin" Value="0,6"/>
+    </Style>
+
     <!-- Un tasto della barra (il menu contestuale si riempie nel codice: dipende dal tipo di tasto) -->
     <DataTemplate x:Key="BarButtonTemplate">
       <Button Style="{StaticResource BarButtonStyle}" Tag="{Binding}" ToolTip="{Binding Tooltip}" Click="BarButton_Click" Opacity="{Binding DragOpacity}"
@@ -144,9 +152,18 @@
 
           <Border Grid.Column="1" Width="1" Height="32" Margin="12,0,6,0" Background="{DynamicResource Divider}" VerticalAlignment="Center"/>
 
-          <!-- tasti (con la linea che indica dove finirà un tasto trascinato) -->
+          <!-- tasti (con la linea che indica dove finirà un tasto trascinato); se non ci stanno tutti, una freccia per lato -->
           <Grid Grid.Column="2">
-            <ScrollViewer x:Name="ButtonsScroll" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled"
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto"/>
+              <ColumnDefinition Width="*"/>
+              <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Button x:Name="ScrollLeftButton" Style="{StaticResource ScrollEdgeButton}" Click="ScrollLeft_Click" Visibility="Collapsed"
+                    ToolTip="Altri tasti (anche con la rotella)" PreviewMouseWheel="ButtonsScroll_MouseWheel" AllowDrop="True" Drop="Buttons_Drop" DragOver="Buttons_DragOver">
+              <TextBlock Style="{StaticResource Glyph}" Text="&#xE76B;" FontSize="11" Foreground="{DynamicResource TextSecondary}"/>
+            </Button>
+            <ScrollViewer Grid.Column="1" x:Name="ButtonsScroll" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" ScrollChanged="ButtonsScroll_ScrollChanged"
                           PreviewMouseWheel="ButtonsScroll_MouseWheel" AllowDrop="True" Drop="Buttons_Drop" DragOver="Buttons_DragOver">
               <ItemsControl x:Name="ButtonsList" ItemTemplate="{StaticResource BarButtonTemplate}" Height="56" HorizontalAlignment="Left">
                 <ItemsControl.ItemsPanel>
@@ -154,7 +171,12 @@
                 </ItemsControl.ItemsPanel>
               </ItemsControl>
             </ScrollViewer>
-            <Border x:Name="DropLine" Width="3" Height="44" CornerRadius="1.5" Background="{DynamicResource Accent}" HorizontalAlignment="Left" VerticalAlignment="Center"
+            <Button Grid.Column="2" x:Name="ScrollRightButton" Style="{StaticResource ScrollEdgeButton}" Click="ScrollRight_Click" Visibility="Collapsed"
+                    ToolTip="Altri tasti (anche con la rotella)" PreviewMouseWheel="ButtonsScroll_MouseWheel" AllowDrop="True" Drop="Buttons_Drop" DragOver="Buttons_DragOver">
+              <TextBlock Style="{StaticResource Glyph}" Text="&#xE76C;" FontSize="11" Foreground="{DynamicResource TextSecondary}"/>
+            </Button>
+            <!-- su tutta la riga: la posizione si calcola dall'inizio della griglia -->
+            <Border Grid.ColumnSpan="3" x:Name="DropLine" Width="3" Height="44" CornerRadius="1.5" Background="{DynamicResource Accent}" HorizontalAlignment="Left" VerticalAlignment="Center"
                     Visibility="Collapsed" IsHitTestVisible="False"/>
           </Grid>
 
@@ -212,7 +234,8 @@
                 <TextBlock Text="2026 © Leonardi Bruno" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,1,1" Foreground="{DynamicResource EngravedText}"/>
               </Grid>
             </Button>
-            <StackPanel Orientation="Horizontal">
+            <!-- in una barra stretta (spazio definito) le voci vanno a capo invece di finire tagliate -->
+            <WrapPanel>
             <Button Style="{StaticResource InfoItem}" Click="InfoCpu_Click" ToolTip="Processore · clic: Gestione attività">
               <StackPanel Orientation="Horizontal"><Path x:Name="CpuIcon" Style="{StaticResource InfoIcon}"/><TextBlock x:Name="CpuText" Style="{StaticResource InfoText}" Text="CPU —" MinWidth="62"/></StackPanel>
             </Button>
@@ -228,7 +251,7 @@
             <Button x:Name="ComButton" Style="{StaticResource InfoItem}" Click="InfoCom_Click" ToolTip="Porte seriali · clic: Gestione dispositivi">
               <StackPanel Orientation="Horizontal"><Path x:Name="ComIcon" Style="{StaticResource InfoIcon}"/><TextBlock x:Name="ComText" Style="{StaticResource InfoText}" Text="—" MinWidth="90"/></StackPanel>
             </Button>
-            </StackPanel>
+            </WrapPanel>
           </DockPanel>
         </Border>
 

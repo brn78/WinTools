@@ -126,8 +126,15 @@ namespace WinTools
         public bool AutoUpdate { get; set; } = true;
         /// <summary>Barra sempre visibile (non si nasconde da sola).</summary>
         public bool Pinned { get; set; }
-        /// <summary>Barra larga quanto lo schermo, altrimenti centrata e larga quanto serve.</summary>
+        /// <summary>Barra larga quanto lo schermo: sostituito da Span nella 1.10 (resta il campo per le impostazioni vecchie e si tiene allineato).</summary>
         public bool FullWidth { get; set; }
+        /// <summary>Spazio della barra lungo il bordo: auto (centrata, larga quanto serve), full (tutta la larghezza dello schermo)
+        /// o custom (dal SpanFrom% al SpanTo% della larghezza: la barra sta lì e compare solo toccando il bordo in quel tratto).</summary>
+        public string Span { get; set; } = "";
+        public int SpanFrom { get; set; } = 25;
+        public int SpanTo { get; set; } = 75;
+        /// <summary>Larghezza minima dello spazio definito, in percentuale dello schermo.</summary>
+        public const int MinSpanPercent = 10;
         public bool ShowLabels { get; set; } = true;
         /// <summary>Riga di stato sotto i tasti: processore, memoria, rete, indirizzi IPv4 e porte COM.</summary>
         public bool ShowInfoStrip { get; set; } = true;
@@ -218,6 +225,10 @@ namespace WinTools
             if (Theme != "dark" && Theme != "light") Theme = "system";
             if (Edge != "bottom") Edge = "top";
             if (Monitor != "primary") Monitor = "cursor";
+            if (Span != "auto" && Span != "full" && Span != "custom") Span = FullWidth ? "full" : "auto";
+            FullWidth = Span == "full";
+            SpanFrom = Math.Max(0, Math.Min(100 - MinSpanPercent, SpanFrom));
+            SpanTo = Math.Max(SpanFrom + MinSpanPercent, Math.Min(100, SpanTo));
             EdgeDelayMs = Math.Max(0, Math.Min(2000, EdgeDelayMs));
             HideDelayMs = Math.Max(100, Math.Min(5000, HideDelayMs));
             NormalizeButtons(Buttons);
@@ -236,6 +247,15 @@ namespace WinTools
                 foreach (var c in b.Children.Where(c => c.Group).ToList()) { b.Children.Remove(c); b.Children.AddRange(c.Children ?? new List<BarButton>()); }
                 NormalizeButtons(b.Children);
             }
+        }
+
+        // ---------------------------------------------------------------- spazio della barra
+        /// <summary>Vero se la x (pixel dello schermo) sta nel tratto di bordo da cui compare la barra, sullo schermo che parte
+        /// da screenLeft ed è largo screenWidth pixel. Senza uno spazio definito il bordo è attivo per intero.</summary>
+        public bool SpanContains(int x, int screenLeft, int screenWidth)
+        {
+            if (Span != "custom") return true;
+            return x >= screenLeft + screenWidth * SpanFrom / 100.0 && x <= screenLeft + screenWidth * SpanTo / 100.0;
         }
 
         /// <summary>Il tasto con quell'id, sulla barra o dentro un contenitore; owner = l'elenco che lo contiene.</summary>

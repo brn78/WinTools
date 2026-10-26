@@ -180,6 +180,7 @@ namespace WinTools.UI
         int _searchSerial;
         Action _noticeAction;
         BarButton _openGroup;
+        double _panelMinWidth;   // larghezza minima del pannello centrato (dal XAML)
 
         /// <summary>Un trascinamento in corso: da quale tasto è partito, dov'è il mouse, che cosa c'è sotto.</summary>
         sealed class DragState
@@ -205,6 +206,7 @@ namespace WinTools.UI
         public BarWindow()
         {
             InitializeComponent();
+            _panelMinWidth = Panel.MinWidth;
             ButtonsList.ItemsSource = _buttons;
             GroupList.ItemsSource = _groupItems;
             ResultsList.ItemsSource = _results;
@@ -225,8 +227,9 @@ namespace WinTools.UI
             PreviewMouseDown += (s, e) =>
             {
                 AutoShown = false;   // si sta usando la barra: resta finché è attiva
-                // Un clic nella barra fuori dal pannello dei filtri lo chiude (sul suo pulsante ci pensa il Click a chiuderlo)
-                if (FilterPopup.IsOpen && !FilterButton.IsMouseOver) FilterPopup.IsOpen = false;
+                // Un clic nella barra fuori dal pannello dei filtri lo chiude (sul suo pulsante ci pensa il Click a chiuderlo).
+                // I clic dentro il pannello arrivano qui anche loro (il popup è figlio della finestra): quelli non lo chiudono
+                if (FilterPopup.IsOpen && !FilterButton.IsMouseOver && !IsInPopup(e.OriginalSource as DependencyObject, FilterPopup)) FilterPopup.IsOpen = false;
                 EnsureActive(e.OriginalSource as DependencyObject);
             };
             PreviewKeyDown += (s, e) => { AutoShown = false; };
@@ -263,11 +266,10 @@ namespace WinTools.UI
             BarRow.Height = S.ShowLabels && S.Buttons.Any(b => !b.IconOnly && !string.IsNullOrEmpty(b.Label)) ? 64 : 52;
             PinGlyph.Text = S.Pinned ? "" : "";
             PinButton.ToolTip = S.Pinned ? "Sblocca la barra (si nasconde da sola)" : "Blocca la barra (sempre visibile)";
-            Panel.HorizontalAlignment = S.FullWidth ? HorizontalAlignment.Stretch : HorizontalAlignment.Center;
             bool bottom = S.Edge == "bottom";
             Panel.CornerRadius = bottom ? new CornerRadius(10, 10, 0, 0) : new CornerRadius(0, 0, 10, 10);
             Panel.BorderThickness = bottom ? new Thickness(1, 1, 1, 0) : new Thickness(1, 0, 1, 1);
-            Panel.Margin = bottom ? new Thickness(0, 14, 0, 0) : new Thickness(0, 0, 0, 14);
+            PlacePanel();
             ((DropShadowEffect)Panel.Effect).Direction = bottom ? 90 : 270;
             DockPanel.SetDock(BarRow, bottom ? Dock.Bottom : Dock.Top);
             DockPanel.SetDock(Notice, bottom ? Dock.Bottom : Dock.Top);
@@ -364,7 +366,7 @@ namespace WinTools.UI
             // Il fuoco va nella casella solo se il clic è sulla casella stessa: su un pulsante (filtri, recenti, cancella)
             // spostare il fuoco farebbe perdere al Button la cattura del mouse e il clic non arriverebbe
             bool inSearch = false, inButton = false;
-            for (var d = source; d != null; d = VisualTreeHelper.GetParent(d))
+            for (var d = source; d != null; d = UiParent(d))
             {
                 if (d is System.Windows.Controls.Primitives.ButtonBase) inButton = true;
                 if (d == SearchHost) { inSearch = !inButton; break; }
@@ -423,9 +425,43 @@ namespace WinTools.UI
             var full = _screen.Bounds;
             double scale = VisualTreeHelper.GetDpi(this).DpiScaleX;
             Width = full.Width / scale;
+            PlacePanel();
             int h = (int)Math.Round(ActualHeight * scale);
             int y = S.Edge == "bottom" ? full.Bottom - h : full.Top;
             Native.SetWindowPos(_hwnd, Native.HWND_TOPMOST, full.Left, y, 0, 0, Native.SWP_NOSIZE | Native.SWP_NOACTIVATE);
+        }
+
+        /// <summary>Barra più stretta di così no (pixel logici): ricerca, almeno due tasti con le frecce e i tasti di servizio.</summary>
+        const double MinSpanWidth = 700;
+
+        /// <summary>
+        /// Larghezza e posizione del pannello nella finestra, che è larga quanto lo schermo: centrato e largo quanto serve, a tutta
+        /// larghezza, oppure nello spazio definito (se è più stretto del minimo si allarga attorno al suo centro, dentro lo schermo).
+        /// </summary>
+        void PlacePanel()
+        {
+            bool bottom = S.Edge == "bottom";
+            double top = bottom ? 14 : 0, under = bottom ? 0 : 14;   // spazio per l'ombra, verso l'interno dello schermo
+            if (S.Span == "custom" && _screen != null)
+            {
+                double screenW = _screen.Bounds.Width / VisualTreeHelper.GetDpi(this).DpiScaleX;
+                double x = screenW * S.SpanFrom / 100, w = screenW * (S.SpanTo - S.SpanFrom) / 100;
+                if (w < MinSpanWidth)
+                {
+                    double grow = Math.Min(MinSpanWidth, screenW) - w;
+                    x -= grow / 2;
+                    w += grow;
+                }
+                Panel.HorizontalAlignment = HorizontalAlignment.Left;
+                Panel.MinWidth = 0;
+                Panel.Width = w;
+                Panel.Margin = new Thickness(Math.Max(0, Math.Min(screenW - w, x)), top, 0, under);
+                return;
+            }
+            Panel.HorizontalAlignment = S.Span == "full" ? HorizontalAlignment.Stretch : HorizontalAlignment.Center;
+            Panel.MinWidth = _panelMinWidth;
+            Panel.Width = double.NaN;
+            Panel.Margin = new Thickness(0, top, 0, under);
         }
 
         /// <summary>Vero se il punto (pixel dello schermo) sta sul pannello della barra (o sul menu di un contenitore), con un margine.</summary>
@@ -724,6 +760,38 @@ namespace WinTools.UI
             e.Handled = true;
         }
 
+        /// <summary>Tasti che non ci stanno (barra stretta): una freccia per lato, solo da dove ce ne sono di nascosti.</summary>
+        void ButtonsScroll_ScrollChanged(object sender, ScrollChangedEventArgs e)
+        {
+            var sv = ButtonsScroll;
+            // Lo spazio dei tasti comprende quello delle frecce: se senza frecce ci stanno tutti, non ne resta nessuna
+            double room = sv.ViewportWidth + (ScrollLeftButton.Visibility == Visibility.Visible ? ScrollLeftButton.Width : 0) + (ScrollRightButton.Visibility == Visibility.Visible ? ScrollRightButton.Width : 0);
+            bool more = sv.ExtentWidth > room + 1;
+            ScrollLeftButton.Visibility = more && sv.HorizontalOffset > 1 ? Visibility.Visible : Visibility.Collapsed;
+            ScrollRightButton.Visibility = more && sv.HorizontalOffset + sv.ViewportWidth < sv.ExtentWidth - 1 ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        void ScrollLeft_Click(object sender, RoutedEventArgs e) { ScrollButtonsPage(-1); }
+        void ScrollRight_Click(object sender, RoutedEventArgs e) { ScrollButtonsPage(1); }
+
+        /// <summary>Una pagina di tasti interi: verso destra il primo tasto tagliato diventa il primo in vista, verso sinistra
+        /// l'ultimo tasto tagliato diventa l'ultimo in vista.</summary>
+        void ScrollButtonsPage(int direction)
+        {
+            double offset = ButtonsScroll.HorizontalOffset, view = ButtonsScroll.ViewportWidth, target = offset + direction * view;
+            // Tornando indietro dalla fine ricompare la freccia di destra e lo spazio dei tasti si accorcia
+            if (direction < 0 && ScrollRightButton.Visibility != Visibility.Visible) view -= ScrollRightButton.Width;
+            for (int n = 0; n < _buttons.Count; n++)
+            {
+                var c = ButtonsList.ItemContainerGenerator.ContainerFromIndex(direction > 0 ? n : _buttons.Count - 1 - n) as FrameworkElement;
+                if (c == null) continue;
+                double left = c.TranslatePoint(new Point(0, 0), ButtonsList).X, right = left + c.ActualWidth;
+                if (direction > 0 && right > offset + view + 0.5) { target = left; break; }
+                if (direction < 0 && left < offset - 0.5) { target = right - view; break; }
+            }
+            ButtonsScroll.ScrollToHorizontalOffset(Math.Max(0, target));
+        }
+
         // ------------------------------------------------------------------ tasti della barra
         void BarButton_Click(object sender, RoutedEventArgs e)
         {
@@ -774,10 +842,22 @@ namespace WinTools.UI
             EndDrag(true);
         }
 
-        bool IsInPopup(DependencyObject el)
+        bool IsInPopup(DependencyObject el) => IsInPopup(el, GroupPopup);
+
+        /// <summary>Vero se l'elemento sta nel contenuto del popup, anche in una tendina aperta da lì (la tendina di una casella
+        /// combinata è un altro popup: da lì si risale per l'albero logico).</summary>
+        static bool IsInPopup(DependencyObject el, Popup popup)
         {
-            for (var c = el; c != null; c = VisualTreeHelper.GetParent(c)) if (ReferenceEquals(c, GroupPopup.Child)) return true;
+            for (var c = el; c != null; c = UiParent(c)) if (ReferenceEquals(c, popup) || ReferenceEquals(c, popup.Child)) return true;
             return false;
+        }
+
+        /// <summary>Il genitore per risalire dal punto di un clic: quello visivo e, alla radice di un popup o per un testo
+        /// (Run, che non è un elemento visivo), quello logico.</summary>
+        static DependencyObject UiParent(DependencyObject d)
+        {
+            var p = d is Visual || d is System.Windows.Media.Media3D.Visual3D ? VisualTreeHelper.GetParent(d) : null;
+            return p ?? LogicalTreeHelper.GetParent(d);
         }
 
         void BeginDrag(DragState d)
