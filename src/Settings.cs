@@ -144,6 +144,8 @@ namespace WinTools
         public List<BarButton> Buttons { get; set; } = new List<BarButton>();
         public IndexSettings Index { get; set; } = new IndexSettings();
         public SearchFilter Filter { get; set; } = new SearchFilter();
+        /// <summary>Dal bordo la barra non compare se in primo piano c'è un'app a schermo intero (Desktop remoto, video, giochi).</summary>
+        public bool EdgeIgnoreFullScreen { get; set; } = true;
         /// <summary>Animazione di comparsa e ritiro: both (scorrimento e dissolvenza), fade, slide, none.</summary>
         public string Animation { get; set; } = "both";
         /// <summary>Copia automatica dei file trascinati nell'archivio: tolta nella 1.9.1 (resta il campo per le impostazioni vecchie), spenta.</summary>

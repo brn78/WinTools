@@ -424,6 +424,37 @@ namespace WinTools
             return path;
         }
 
+        // ---- app a schermo intero in primo piano (Desktop remoto, video, giochi): il bordo non deve far comparire la barra
+        [StructLayout(LayoutKind.Sequential)] struct FSRECT { public int Left, Top, Right, Bottom; }
+        [DllImport("user32.dll")] static extern bool GetWindowRect(IntPtr hWnd, out FSRECT rect);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder name, int max);
+        [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint pid);
+        [DllImport("user32.dll")] static extern IntPtr GetShellWindow();
+        [DllImport("user32.dll")] static extern IntPtr GetDesktopWindow();
+
+        /// <summary>
+        /// Vero se la finestra in primo piano copre per intero lo schermo indicato (pixel reali) e non è il desktop, la barra
+        /// delle applicazioni o una finestra nostra. Come fa la barra di Windows con «nascondi automaticamente».
+        /// </summary>
+        public static bool IsFullScreenForeground(System.Drawing.Rectangle screen, IntPtr ourHwnd)
+        {
+            try
+            {
+                IntPtr fg = GetForegroundWindow();
+                if (fg == IntPtr.Zero || fg == ourHwnd || fg == GetShellWindow() || fg == GetDesktopWindow()) return false;
+                uint pid; GetWindowThreadProcessId(fg, out pid);
+                if (pid == (uint)System.Diagnostics.Process.GetCurrentProcess().Id) return false;
+                var sb = new System.Text.StringBuilder(64);
+                GetClassName(fg, sb, sb.Capacity);
+                string cls = sb.ToString();
+                if (cls == "Progman" || cls == "WorkerW" || cls == "Shell_TrayWnd" || cls == "Shell_SecondaryTrayWnd") return false;
+                FSRECT r;
+                if (!GetWindowRect(fg, out r)) return false;
+                return r.Left <= screen.Left && r.Top <= screen.Top && r.Right >= screen.Right && r.Bottom >= screen.Bottom;
+            }
+            catch { return false; }
+        }
+
         /// <summary>Svuota il Cestino con la conferma di Windows.</summary>
         public static bool EmptyRecycleBin()
         {

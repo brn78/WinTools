@@ -23,6 +23,9 @@ In entrambi i casi l'aggiornamento automatico sostituisce l'exe sul posto.
 * **Spillo**: blocca la barra sempre visibile. **Ingranaggio**: impostazioni.
 * **Area di notifica**: clic sinistro mostra la barra, clic destro apre il menu (blocca, impostazioni, aggiorna l'indice, avvio con Windows, aggiornamenti, esci).
 
+## 🆕 Versione 1.10.1
+* **Niente barra sopra le app a schermo intero**: con Desktop remoto a schermo intero, un video o un gioco in primo piano, il mouse sul bordo non la fa più comparire (come la barra di Windows con «nascondi automaticamente»). Il tasto rapido funziona sempre. Opzione in Generale → «Quando compare».
+
 ## 🆕 Versione 1.10.0
 * **Spazio della barra a scelta** (*Impostazioni → Generale → Aspetto*): centrata e larga quanto serve, larga quanto lo schermo oppure **in un tratto del bordo scelto da te**. Nella miniatura dello schermo trascini la barra per spostarla e le maniglie ai lati per allargarla o stringerla, oppure scrivi inizio e fine in percentuale. Con lo spazio definito la barra **compare solo quando il mouse tocca il bordo in quel tratto**: il resto del bordo (schede del browser, tasti delle finestre) resta libero. Con più schermi il tratto vale su ciascuno.
 * In una barra stretta i tasti che non ci stanno scorrono con le **frecce ai lati** (una pagina di tasti interi per clic) o con la rotella, e la riga informazioni va a capo invece di finire tagliata. Se il tratto è troppo stretto per ricerca e tasti, la barra si allarga quanto basta attorno al suo centro.

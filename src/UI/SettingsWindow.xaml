@@ -209,6 +209,13 @@
               <Border Style="{StaticResource SettingCard}">
                 <Grid>
                   <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <StackPanel><TextBlock Text="Non comparire sopra le app a schermo intero" Style="{StaticResource RowLabel}"/><TextBlock Text="Con Desktop remoto a schermo intero, un video o un gioco in primo piano il bordo non fa comparire la barra (vale anche per le finestre ingrandite quando la barra di Windows è nascosta). Il tasto rapido funziona sempre." Style="{StaticResource RowDesc}"/></StackPanel>
+                  <ToggleButton Grid.Column="1" x:Name="EdgeFullScreenBox" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"/>
+                </Grid>
+              </Border>
+              <Border Style="{StaticResource SettingCard}">
+                <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                   <StackPanel><TextBlock Text="Cursore subito nella ricerca quando compare dal bordo" Style="{StaticResource RowLabel}"/><TextBlock Text="Si può scrivere senza fare clic. Toglie il fuoco all'app in uso. Se non scrivi né clicchi, la barra si ritira comunque quando il mouse si allontana." Style="{StaticResource RowDesc}"/></StackPanel>
                   <ToggleButton Grid.Column="1" x:Name="FocusEdgeBox" Style="{StaticResource ToggleSwitch}" VerticalAlignment="Center"/>
                 </Grid>

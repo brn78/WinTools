@@ -173,6 +173,8 @@ namespace WinTools.UI
         readonly DispatcherTimer _noticeTimer = new DispatcherTimer();
         Forms.Screen _screen;
         IntPtr _hwnd;
+        /// <summary>Handle della finestra della barra (per escluderla dai controlli sulla finestra in primo piano).</summary>
+        public IntPtr Handle => _hwnd;
         bool _hiding;
         bool _dialogOpen;
         bool _noActivate;

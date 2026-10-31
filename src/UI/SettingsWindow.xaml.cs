@@ -102,6 +102,7 @@ namespace WinTools.UI
             LabelsBox.IsChecked = _work.ShowLabels;
             InfoStripBox.IsChecked = _work.ShowInfoStrip;
             EdgeTriggerBox.IsChecked = _work.EdgeTrigger;
+            EdgeFullScreenBox.IsChecked = _work.EdgeIgnoreFullScreen;
             FocusEdgeBox.IsChecked = _work.FocusOnEdge;
             EdgeDelayBox.Text = _work.EdgeDelayMs.ToString();
             HideDelayBox.Text = _work.HideDelayMs.ToString();
@@ -695,6 +696,7 @@ namespace WinTools.UI
             s.ShowLabels = LabelsBox.IsChecked == true;
             s.ShowInfoStrip = InfoStripBox.IsChecked == true;
             s.EdgeTrigger = EdgeTriggerBox.IsChecked == true;
+            s.EdgeIgnoreFullScreen = EdgeFullScreenBox.IsChecked == true;
             s.FocusOnEdge = FocusEdgeBox.IsChecked == true;
             int n;
             if (int.TryParse(EdgeDelayBox.Text.Trim(), out n)) s.EdgeDelayMs = Math.Max(0, Math.Min(2000, n));

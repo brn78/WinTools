@@ -180,6 +180,8 @@ namespace WinTools
             bool onEdge = Settings.Edge == "bottom" ? p.Y >= b.Bottom - 1 : p.Y <= b.Top;
             // Con uno spazio definito conta solo il tratto della barra: il resto del bordo (schede, tasti delle finestre) resta libero
             if (!onEdge || !Settings.SpanContains(p.X, b.Left, b.Width)) { _edgeSince = DateTime.MinValue; return; }
+            // Sopra un'app a schermo intero (Desktop remoto, un video, un gioco) il bordo non vale: resta il tasto rapido
+            if (Settings.EdgeIgnoreFullScreen && Native.IsFullScreenForeground(b, Bar.Handle)) { _edgeSince = DateTime.MinValue; return; }
             // Con un tasto del mouse premuto si sta probabilmente trascinando qualcosa (file dal desktop, una finestra):
             // la barra compare lo stesso, ma dopo una sosta più lunga sul bordo e senza prendere il fuoco, così ci si
             // può rilasciare sopra ciò che si trascina. Prima non compariva affatto e il rilascio finiva nel vuoto.
